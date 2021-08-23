@@ -56,7 +56,7 @@ func ReadVarint(r io.Reader) (uint64, int, error) {
 
 // WriteMessages writes a variable number of protobuf messages into a given writer.
 // This code is essentially based on:
-// https://github.com/yugabyte/yugabyte-db/blob/master/java/yb-client/src/main/java/org/yb/client/YRpc.java#L274
+// https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/YRpc.java#L274
 // In the Java code, the Message header is the requestHeader,
 // the Message pb is the actual payload.
 func WriteMessages(b io.Writer, msgs ...protoreflect.ProtoMessage) error {
@@ -74,14 +74,14 @@ func WriteMessages(b io.Writer, msgs ...protoreflect.ProtoMessage) error {
 		serialized = append(serialized, bys)
 	}
 	// write the total size to the buffer
-	// per: https://github.com/yugabyte/yugabyte-db/blob/master/java/yb-client/src/main/java/org/yb/client/YRpc.java#L279
+	// per: https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/YRpc.java#L279
 	if err := writeInt(b, totalSize); err != nil {
 		return err
 	}
 	for _, s := range serialized {
 		// calculate and write the individual message length varint, per:
-		// - https://github.com/yugabyte/yugabyte-db/blob/master/java/yb-client/src/main/java/org/yb/client/YRpc.java#L282
-		// - https://github.com/yugabyte/yugabyte-db/blob/master/java/yb-client/src/main/java/org/yb/client/YRpc.java#L285
+		// - https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/YRpc.java#L282
+		// - https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/YRpc.java#L285
 		varintBytes := toVarintByte(len(s))
 		n, err := b.Write(varintBytes)
 		if err != nil {
@@ -91,8 +91,8 @@ func WriteMessages(b io.Writer, msgs ...protoreflect.ProtoMessage) error {
 			return io.EOF
 		}
 		// write the actual payload, per:
-		// - https://github.com/yugabyte/yugabyte-db/blob/master/java/yb-client/src/main/java/org/yb/client/YRpc.java#L283
-		// - https://github.com/yugabyte/yugabyte-db/blob/master/java/yb-client/src/main/java/org/yb/client/YRpc.java#L286
+		// - https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/YRpc.java#L283
+		// - https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/YRpc.java#L286
 		n2, err := b.Write(s)
 		if err != nil {
 			return err
@@ -152,7 +152,8 @@ func toVarintByte(i int) []byte {
 }
 
 // This is verbatim copy of:
-// https://github.com/protocolbuffers/protobuf/blob/master/java/core/src/main/java/com/google/protobuf/CodedOutputStream.java#L727
+// https://github.com/protocolbuffers/protobuf/blob/v3.5.1/java/core/src/main/java/com/google/protobuf/CodedOutputStream.java#L728
+// YugabyteDB Java client 2.7.2 depends on protobuf-java 3.5.1.
 func computeUInt32SizeNoTag(value int) int {
 	if (value & (^0 << 7)) == 0 {
 		return 1

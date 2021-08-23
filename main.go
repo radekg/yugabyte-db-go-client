@@ -131,7 +131,7 @@ func main() {
 	defer conn.Close()
 
 	// Once connected, send the YugabyteDB header:
-	// https://github.com/yugabyte/yugabyte-db/blob/master/java/yb-client/src/main/java/org/yb/client/TabletClient.java#L593
+	// https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/TabletClient.java#L593
 	header := append([]byte("YB"), 1)
 	conn.Write(header)
 	// this doesn't reply with anything:
