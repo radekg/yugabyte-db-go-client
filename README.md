@@ -48,3 +48,9 @@ Logging flags:
 - `--log-as-json`: log entries as JSON, default `false`
 - `--log-color`: log colored output, default `false`
 - `--log-force-color`: force colored output, default `false`
+
+#### Command specific flags
+
+##### list-tablet-servers
+
+- `--primary-only`: boolean, list primary tablet servers only, default `false`
