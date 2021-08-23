@@ -55,9 +55,14 @@ func ReadVarint(r io.Reader) (uint64, int, error) {
 }
 
 // WriteMessages writes a variable number of protobuf messages into a given writer.
+// This code is essentially based on:
+// https://github.com/yugabyte/yugabyte-db/blob/master/java/yb-client/src/main/java/org/yb/client/YRpc.java#L274
+// In the Java code, the Message header is the requestHeader,
+// the Message pb is the actual payload.
 func WriteMessages(b io.Writer, msgs ...protoreflect.ProtoMessage) error {
 	serialized := [][]byte{}
 	totalSize := 0
+	// calculate the total size:
 	for _, m := range msgs {
 		bys, err := proto.Marshal(m)
 		if err != nil {
@@ -68,10 +73,15 @@ func WriteMessages(b io.Writer, msgs ...protoreflect.ProtoMessage) error {
 		totalSize = totalSize + computeUInt32SizeNoTag(bysLength)
 		serialized = append(serialized, bys)
 	}
+	// write the total size to the buffer
+	// per: https://github.com/yugabyte/yugabyte-db/blob/master/java/yb-client/src/main/java/org/yb/client/YRpc.java#L279
 	if err := writeInt(b, totalSize); err != nil {
 		return err
 	}
 	for _, s := range serialized {
+		// calculate and write the individual message length varint, per:
+		// - https://github.com/yugabyte/yugabyte-db/blob/master/java/yb-client/src/main/java/org/yb/client/YRpc.java#L282
+		// - https://github.com/yugabyte/yugabyte-db/blob/master/java/yb-client/src/main/java/org/yb/client/YRpc.java#L285
 		varintBytes := toVarintByte(len(s))
 		n, err := b.Write(varintBytes)
 		if err != nil {
@@ -80,6 +90,9 @@ func WriteMessages(b io.Writer, msgs ...protoreflect.ProtoMessage) error {
 		if n != len(varintBytes) {
 			return io.EOF
 		}
+		// write the actual payload, per:
+		// - https://github.com/yugabyte/yugabyte-db/blob/master/java/yb-client/src/main/java/org/yb/client/YRpc.java#L283
+		// - https://github.com/yugabyte/yugabyte-db/blob/master/java/yb-client/src/main/java/org/yb/client/YRpc.java#L286
 		n2, err := b.Write(s)
 		if err != nil {
 			return err

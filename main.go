@@ -56,18 +56,21 @@ func readListMastersResponse(input []byte) {
 	reader := bytes.NewReader(input)
 
 	// Read the complete data length:
+	// https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/CallResponse.java#L71
 	dataLength, err := utils.ReadInt(reader)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println("DEBUG: the response data length is: ", dataLength)
 
+	// https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/CallResponse.java#L76
 	responseHeaderLength, _, err := utils.ReadVarint(reader)
 	if err != nil {
 		panic(err)
 	}
 
 	// Now I can read the response header:
+	// https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/CallResponse.java#L78
 	responseHeaderBuf := make([]byte, responseHeaderLength)
 	n, err := reader.Read(responseHeaderBuf)
 	if err != nil {
@@ -88,6 +91,10 @@ func readListMastersResponse(input []byte) {
 		*responseHeader.IsError,
 		len(responseHeader.SidecarOffsets)))
 
+	// This here is currently a guess but I believe the corretc mechanism sits here:
+	// https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/CallResponse.java#L113
+	// The encoding/binary.ReadUvarint and encoding/binary.ReadVarint doesn't do what it supposed to do
+	// hence the custom code here.
 	responsePayloadLength, _, err := utils.ReadVarint(reader)
 	if err != nil {
 		panic(err)
@@ -123,10 +130,14 @@ func main() {
 	}
 	defer conn.Close()
 
+	// Once connected, send the YugabyteDB header:
+	// https://github.com/yugabyte/yugabyte-db/blob/master/java/yb-client/src/main/java/org/yb/client/TabletClient.java#L593
 	header := append([]byte("YB"), 1)
 	conn.Write(header)
+	// this doesn't reply with anything:
 	mustReadFromConn(conn)
 
+	//
 	getMasterRegistration(conn)
 	mustReadFromConn(conn)
 
