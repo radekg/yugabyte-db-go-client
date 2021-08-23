@@ -13,7 +13,7 @@ import (
 // Command is the command declaration.
 var Command = &cobra.Command{
 	Use:   "list-tablet-servers",
-	Short: "List tablet servers",
+	Short: "List all the tablet servers in this database",
 	Run:   run,
 	Long:  ``,
 }

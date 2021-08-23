@@ -1,4 +1,4 @@
-package listmasters
+package isloadbalanced
 
 import (
 	"encoding/json"
@@ -12,8 +12,8 @@ import (
 
 // Command is the command declaration.
 var Command = &cobra.Command{
-	Use:   "list-masters",
-	Short: "List all the masters in this database",
+	Use:   "is-load-balanced",
+	Short: "Check if master leader thinks that the load is balanced across tservers",
 	Run:   run,
 	Long:  ``,
 }
@@ -21,11 +21,13 @@ var Command = &cobra.Command{
 var (
 	commandConfig = configs.NewCliConfig()
 	logConfig     = configs.NewLogginConfig()
+	opConfig      = configs.NewOpIsLoadBalancedConfig()
 )
 
 func initFlags() {
 	Command.Flags().AddFlagSet(commandConfig.FlagSet())
 	Command.Flags().AddFlagSet(logConfig.FlagSet())
+	Command.Flags().AddFlagSet(opConfig.FlagSet())
 }
 
 func init() {
@@ -61,9 +63,9 @@ func processCommand() int {
 	}
 	defer connectedClient.Close()
 
-	responsePayload, err := connectedClient.ListMasters()
+	responsePayload, err := connectedClient.IsLoadBalanced(opConfig)
 	if err != nil {
-		logger.Error("failed reading masters list", "reason", err)
+		logger.Error("failed reading load balanced state", "reason", err)
 		return 1
 	}
 

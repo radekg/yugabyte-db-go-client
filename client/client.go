@@ -72,6 +72,7 @@ type YBConnectedClient interface {
 	Close() error
 
 	GetMasterRegistration() (*ybApi.GetMasterRegistrationResponsePB, error)
+	IsLoadBalanced(*configs.OpIsLoadBalancedConfig) (*ybApi.IsLoadBalancedResponsePB, error)
 	ListMasters() (*ybApi.ListMastersResponsePB, error)
 	ListTabletServers(*configs.OpListTabletServersConfig) (*ybApi.ListTabletServersResponsePB, error)
 
@@ -113,6 +114,45 @@ func (c *ybDefaultConnectedClient) GetMasterRegistration() (*ybApi.GetMasterRegi
 		return nil, err
 	}
 	responsePayload := &ybApi.GetMasterRegistrationResponsePB{}
+	readResponseErr := c.readResponseInto(buffer, responsePayload)
+	if readResponseErr != nil {
+		return nil, readResponseErr
+	}
+	if err := responsePayload.GetError(); err != nil {
+		return nil, fmt.Errorf(err.String())
+	}
+	return responsePayload, nil
+}
+
+// IsLoadBalanced returns a list of masters or an error if call failed.
+func (c *ybDefaultConnectedClient) IsLoadBalanced(opConfig *configs.OpIsLoadBalancedConfig) (*ybApi.IsLoadBalancedResponsePB, error) {
+
+	requestHeader := &ybApi.RequestHeader{
+		CallId: utils.PInt32(int32(c.callID())),
+		RemoteMethod: &ybApi.RemoteMethodPB{
+			ServiceName: utils.PString("yb.master.MasterService"),
+			MethodName:  utils.PString("IsLoadBalanced"),
+		},
+		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
+	}
+
+	payload := &ybApi.IsLoadBalancedRequestPB{
+		ExpectedNumServers: func() *int32 {
+			if opConfig.ExpectedNumServers > 0 {
+				return utils.PInt32(int32(opConfig.ExpectedNumServers))
+			}
+			return nil
+		}(),
+	}
+
+	if err := c.sendMessages(requestHeader, payload); err != nil {
+		return nil, err
+	}
+	buffer, err := c.recv()
+	if err != nil {
+		return nil, err
+	}
+	responsePayload := &ybApi.IsLoadBalancedResponsePB{}
 	readResponseErr := c.readResponseInto(buffer, responsePayload)
 	if readResponseErr != nil {
 		return nil, readResponseErr

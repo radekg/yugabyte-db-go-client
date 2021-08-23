@@ -29,6 +29,7 @@ go run ./main.go [command] [flags]
 where the command is one of:
 
 - `get-master-registration`
+- `is-load-balanced`
 - `list-masters`
 - `list-tablet-servers`
 
@@ -50,6 +51,10 @@ Logging flags:
 - `--log-force-color`: force colored output, default `false`
 
 #### Command specific flags
+
+##### is-load-balanced
+
+- `--expected-num-servers`: int32, how many servers to include in this check, default `-1` (`undefined`)
 
 ##### list-tablet-servers
 
