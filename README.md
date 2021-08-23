@@ -1,6 +1,6 @@
 # YugabyteDB client for go
 
-Work in progress. Current state: PoC.
+Work in progress. Current state: this can definitely work.
 
 ## Start YugabyteDB in a container
 
