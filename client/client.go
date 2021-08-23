@@ -73,7 +73,7 @@ type YBConnectedClient interface {
 
 	GetMasterRegistration() (*ybApi.GetMasterRegistrationResponsePB, error)
 	ListMasters() (*ybApi.ListMastersResponsePB, error)
-	ListTabletServers() (*ybApi.ListTabletServersResponsePB, error)
+	ListTabletServers(*configs.OpListTabletServersConfig) (*ybApi.ListTabletServersResponsePB, error)
 
 	OnConnected() <-chan struct{}
 	OnConnectError() <-chan error
@@ -153,7 +153,7 @@ func (c *ybDefaultConnectedClient) ListMasters() (*ybApi.ListMastersResponsePB, 
 }
 
 // ListTabletServers returns a list of tablet servers or an error if call failed.
-func (c *ybDefaultConnectedClient) ListTabletServers() (*ybApi.ListTabletServersResponsePB, error) {
+func (c *ybDefaultConnectedClient) ListTabletServers(opConfig *configs.OpListTabletServersConfig) (*ybApi.ListTabletServersResponsePB, error) {
 	requestHeader := &ybApi.RequestHeader{
 		CallId: utils.PInt32(int32(c.callID())),
 		RemoteMethod: &ybApi.RemoteMethodPB{
@@ -162,7 +162,9 @@ func (c *ybDefaultConnectedClient) ListTabletServers() (*ybApi.ListTabletServers
 		},
 		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
 	}
-	payload := &ybApi.ListTabletServersRequestPB{PrimaryOnly: utils.PBool(false)}
+	payload := &ybApi.ListTabletServersRequestPB{
+		PrimaryOnly: utils.PBool(opConfig.PrimaryOnly),
+	}
 	if err := c.sendMessages(requestHeader, payload); err != nil {
 		return nil, err
 	}

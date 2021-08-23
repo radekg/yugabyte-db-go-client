@@ -21,11 +21,13 @@ var Command = &cobra.Command{
 var (
 	commandConfig = configs.NewCliConfig()
 	logConfig     = configs.NewLogginConfig()
+	opConfig      = configs.NewOpListTableServersConfig()
 )
 
 func initFlags() {
 	Command.Flags().AddFlagSet(commandConfig.FlagSet())
 	Command.Flags().AddFlagSet(logConfig.FlagSet())
+	Command.Flags().AddFlagSet(opConfig.FlagSet())
 }
 
 func init() {
@@ -61,7 +63,7 @@ func processCommand() int {
 	}
 	defer connectedClient.Close()
 
-	responsePayload, err := connectedClient.ListTabletServers()
+	responsePayload, err := connectedClient.ListTabletServers(opConfig)
 	if err != nil {
 		logger.Error("failed reading tablet servers list", "reason", err)
 		return 1
