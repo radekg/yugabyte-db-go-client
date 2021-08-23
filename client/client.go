@@ -12,6 +12,8 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+var recvChunkSize = 4 * 1024
+
 // Connect connects to the master server without TLS.
 func Connect(cfg *YBClientConfig) (YBConnectedClient, error) {
 	if cfg.TLSConfig != nil {
@@ -101,12 +103,12 @@ func (c *ybDefaultConnectedClient) GetMasterRegistration() (*ybApi.GetMasterRegi
 	if err := c.sendMessages(requestHeader, payload); err != nil {
 		return nil, err
 	}
-	responseBytes, err := c.recv()
+	buffer, err := c.recv() // TODO: can move this to readResponseInto
 	if err != nil {
 		return nil, err
 	}
 	responsePayload := &ybApi.GetMasterRegistrationResponsePB{}
-	readResponseErr := c.readResponseInto(bytes.NewReader(responseBytes), responsePayload)
+	readResponseErr := c.readResponseInto(buffer, responsePayload)
 	if readResponseErr != nil {
 		return nil, readResponseErr
 	}
@@ -130,12 +132,12 @@ func (c *ybDefaultConnectedClient) ListMasters() (*ybApi.ListMastersResponsePB, 
 	if err := c.sendMessages(requestHeader, payload); err != nil {
 		return nil, err
 	}
-	responseBytes, err := c.recv()
+	buffer, err := c.recv()
 	if err != nil {
 		return nil, err
 	}
 	responsePayload := &ybApi.ListMastersResponsePB{}
-	readResponseErr := c.readResponseInto(bytes.NewReader(responseBytes), responsePayload)
+	readResponseErr := c.readResponseInto(buffer, responsePayload)
 	if readResponseErr != nil {
 		return nil, readResponseErr
 	}
@@ -159,12 +161,12 @@ func (c *ybDefaultConnectedClient) ListTabletServers() (*ybApi.ListTabletServers
 	if err := c.sendMessages(requestHeader, payload); err != nil {
 		return nil, err
 	}
-	responseBytes, err := c.recv()
+	buffer, err := c.recv()
 	if err != nil {
 		return nil, err
 	}
 	responsePayload := &ybApi.ListTabletServersResponsePB{}
-	readResponseErr := c.readResponseInto(bytes.NewReader(responseBytes), responsePayload)
+	readResponseErr := c.readResponseInto(buffer, responsePayload)
 	if readResponseErr != nil {
 		return nil, readResponseErr
 	}
@@ -211,13 +213,30 @@ func (c *ybDefaultConnectedClient) doConnect() *ybDefaultConnectedClient {
 	return c
 }
 
-func (c *ybDefaultConnectedClient) recv() ([]byte, error) {
-	buf := make([]byte, 1024*1024)
-	n, err := c.conn.Read(buf)
-	if err != nil {
-		return buf, err
+func (c *ybDefaultConnectedClient) recv() (*bytes.Buffer, error) {
+	buf := bytes.NewBuffer([]byte{})
+	for {
+		chunk := make([]byte, recvChunkSize)
+		n, err := c.conn.Read(chunk)
+		if err != nil {
+			return buf, err
+		}
+		// we read an EOF, finished reading
+		// previous iteration was fitting
+		// all in one recvChunkSize
+		if n == 4 && chunk[0] == 0 && chunk[1] == 0 && chunk[2] == 0 && chunk[3] == 0 {
+			break
+		}
+		// otherwise, read what we've got:
+		buf.Write(chunk[0:n])
+		// if we have read exactly recvChunkSize, we continue reading
+		if n == recvChunkSize {
+			continue
+		}
+		// we can't read more so this implies we read less
+		break
 	}
-	return buf[0:n], nil
+	return buf, nil
 }
 
 func (c *ybDefaultConnectedClient) send(buf *bytes.Buffer) error {
@@ -232,7 +251,7 @@ func (c *ybDefaultConnectedClient) send(buf *bytes.Buffer) error {
 	return nil
 }
 
-func (c *ybDefaultConnectedClient) readResponseInto(reader *bytes.Reader, m protoreflect.ProtoMessage) error {
+func (c *ybDefaultConnectedClient) readResponseInto(reader *bytes.Buffer, m protoreflect.ProtoMessage) error {
 	// Read the complete data length:
 	// https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/CallResponse.java#L71
 	dataLength, err := utils.ReadInt(reader)
