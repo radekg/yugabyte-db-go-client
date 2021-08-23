@@ -23,39 +23,28 @@ docker run \
 ## Run the client
 
 ```
-go run ./main.go
+go run ./main.go [command] [flags]
 ```
 
-The output:
+where the command is one of:
 
-```json
-[
-  {
-    "instance_id": {
-      "permanent_uuid": "YTUxM2Q4YzdjODM0NDQzZmE0ZmQ2ZjBkOGE1YmU0YmQ=",
-      "instance_seqno": 1629644374335479,
-      "start_time_us": 1629644374335479
-    },
-    "registration": {
-      "private_rpc_addresses": [
-        {
-          "host": "localhost",
-          "port": 7100
-        }
-      ],
-      "http_addresses": [
-        {
-          "host": "localhost",
-          "port": 7000
-        }
-      ],
-      "cloud_info": {
-        "placement_cloud": "cloud1",
-        "placement_region": "datacenter1",
-        "placement_zone": "rack1"
-      }
-    },
-    "role": 1
-  }
-]
-```
+- `get-master-registration`
+- `list-masters`
+- `list-tablet-servers`
+
+### Flags
+
+Common flags:
+
+- `--master`: host port of the master to query, default `127.0.0.1:7100`
+- `--operation-timeout`: RPC operation timeout, duration string (`5s`, `1m`, ...), default `5s`
+- `--tls-ca-cert-file-path`: full path to the CA certificate file, default `empty string`
+- `--tls-cert-file-path`: full path to the certificate file, default `empty string`
+- `--tls-key-file-path`: full path to the key file, default `empty string`
+
+Logging flags:
+
+- `--log-level`: log level, default `info`
+- `--log-as-json`: log entries as JSON, default `false`
+- `--log-color`: log colored output, default `false`
+- `--log-force-color`: force colored output, default `false`

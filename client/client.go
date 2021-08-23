@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/hashicorp/go-hclog"
+	"github.com/radekg/yugabyte-db-go-client/configs"
 	"github.com/radekg/yugabyte-db-go-client/utils"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 	"google.golang.org/protobuf/proto"
@@ -15,51 +17,52 @@ import (
 var recvChunkSize = 4 * 1024
 
 // Connect connects to the master server without TLS.
-func Connect(cfg *YBClientConfig) (YBConnectedClient, error) {
-	if cfg.TLSConfig != nil {
-		return connectTLS(cfg)
+func Connect(cfg *configs.YBClientConfig, logger hclog.Logger) (YBConnectedClient, error) {
+	if logger == nil {
+		logger = hclog.Default().Named("default-client-log")
 	}
-	return connect(cfg)
+	if cfg.TLSConfig != nil {
+		return connectTLS(cfg, logger)
+	}
+	return connect(cfg, logger)
 }
 
-func connect(cfg *YBClientConfig) (YBConnectedClient, error) {
+func connect(cfg *configs.YBClientConfig, logger hclog.Logger) (YBConnectedClient, error) {
+	logger.Debug("connecting non-TLS client")
 	conn, err := net.Dial("tcp", cfg.MasterHostPort)
 	if err != nil {
 		return nil, err
 	}
 	client := &ybDefaultConnectedClient{
+		originalConfig: cfg,
 		chanConnected:  make(chan struct{}, 1),
 		chanConnectErr: make(chan error, 1),
 		closeFunc: func() error {
 			return conn.Close()
 		},
-		conn: conn,
+		conn:   conn,
+		logger: logger,
 	}
-	return client.doConnect(), nil
+	return client.afterConnect(), nil
 }
 
-func connectTLS(cfg *YBClientConfig) (YBConnectedClient, error) {
+func connectTLS(cfg *configs.YBClientConfig, logger hclog.Logger) (YBConnectedClient, error) {
+	logger.Debug("connecting TLS client")
 	conn, err := tls.Dial("tcp", cfg.MasterHostPort, cfg.TLSConfig)
 	if err != nil {
 		return nil, err
 	}
 	client := &ybDefaultConnectedClient{
+		originalConfig: cfg,
 		chanConnected:  make(chan struct{}, 1),
 		chanConnectErr: make(chan error, 1),
 		closeFunc: func() error {
 			return conn.Close()
 		},
-		conn: conn,
+		conn:   conn,
+		logger: logger,
 	}
-	return client.doConnect(), nil
-}
-
-// Client config
-
-// YBClientConfig is the client configuration.
-type YBClientConfig struct {
-	MasterHostPort string
-	TLSConfig      *tls.Config
+	return client.afterConnect(), nil
 }
 
 // Connected client
@@ -77,11 +80,13 @@ type YBConnectedClient interface {
 }
 
 type ybDefaultConnectedClient struct {
+	originalConfig *configs.YBClientConfig
+	callCounter    int
 	chanConnected  chan struct{}
 	chanConnectErr chan error
 	closeFunc      func() error
 	conn           net.Conn
-	callCounter    int
+	logger         hclog.Logger
 }
 
 // Close closes a connected client.
@@ -97,7 +102,7 @@ func (c *ybDefaultConnectedClient) GetMasterRegistration() (*ybApi.GetMasterRegi
 			ServiceName: utils.PString("yb.master.MasterService"),
 			MethodName:  utils.PString("GetMasterRegistration"),
 		},
-		TimeoutMillis: utils.PUint32(5000), // TODO: must be customizable
+		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
 	}
 	payload := &ybApi.GetMasterRegistrationRequestPB{}
 	if err := c.sendMessages(requestHeader, payload); err != nil {
@@ -126,7 +131,7 @@ func (c *ybDefaultConnectedClient) ListMasters() (*ybApi.ListMastersResponsePB, 
 			ServiceName: utils.PString("yb.master.MasterService"),
 			MethodName:  utils.PString("ListMasters"),
 		},
-		TimeoutMillis: utils.PUint32(5000), // TODO: must be customizable
+		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
 	}
 	payload := &ybApi.ListMastersRequestPB{}
 	if err := c.sendMessages(requestHeader, payload); err != nil {
@@ -155,7 +160,7 @@ func (c *ybDefaultConnectedClient) ListTabletServers() (*ybApi.ListTabletServers
 			ServiceName: utils.PString("yb.master.MasterService"),
 			MethodName:  utils.PString("ListTabletServers"),
 		},
-		TimeoutMillis: utils.PUint32(5000), // TODO: must be customizable
+		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
 	}
 	payload := &ybApi.ListTabletServersRequestPB{PrimaryOnly: utils.PBool(false)}
 	if err := c.sendMessages(requestHeader, payload); err != nil {
@@ -188,14 +193,9 @@ func (c *ybDefaultConnectedClient) OnConnectError() <-chan error {
 
 /// Private interface
 
-func (c *ybDefaultConnectedClient) callID() int {
-	currentID := c.callCounter
-	c.callCounter = c.callCounter + 1
-	return currentID
-}
-
-func (c *ybDefaultConnectedClient) doConnect() *ybDefaultConnectedClient {
+func (c *ybDefaultConnectedClient) afterConnect() *ybDefaultConnectedClient {
 	go func() {
+		c.logger.Debug("sending connection header")
 		header := append([]byte("YB"), 1)
 		n, err := c.conn.Write(header)
 		if err != nil {
@@ -208,9 +208,16 @@ func (c *ybDefaultConnectedClient) doConnect() *ybDefaultConnectedClient {
 			close(c.chanConnected)
 			return
 		}
+		c.logger.Debug("client connected")
 		close(c.chanConnected)
 	}()
 	return c
+}
+
+func (c *ybDefaultConnectedClient) callID() int {
+	currentID := c.callCounter
+	c.callCounter = c.callCounter + 1
+	return currentID
 }
 
 func (c *ybDefaultConnectedClient) recv() (*bytes.Buffer, error) {
@@ -252,41 +259,58 @@ func (c *ybDefaultConnectedClient) send(buf *bytes.Buffer) error {
 }
 
 func (c *ybDefaultConnectedClient) readResponseInto(reader *bytes.Buffer, m protoreflect.ProtoMessage) error {
+
+	opLogger := c.logger.Named("read-response-into").With("message", m.ProtoReflect().Type().Descriptor().Name())
+
 	// Read the complete data length:
 	// https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/CallResponse.java#L71
 	dataLength, err := utils.ReadInt(reader)
 	if err != nil {
+		opLogger.Error("failed reading data length", "reason", err)
 		return err
 	}
-	fmt.Println("DEBUG: the response data length is: ", dataLength)
+
+	opLogger.Trace("data-length", "value", dataLength)
 
 	// https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/CallResponse.java#L76
 	responseHeaderLength, _, err := utils.ReadVarint(reader)
 	if err != nil {
+		opLogger.Error("failed reading response header length", "reason", err)
 		return err
 	}
+
+	opLogger.Trace("response-header-length", "value", responseHeaderLength)
 
 	// Now I can read the response header:
 	// https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/CallResponse.java#L78
 	responseHeaderBuf := make([]byte, responseHeaderLength)
 	n, err := reader.Read(responseHeaderBuf)
 	if err != nil {
+		opLogger.Error("failed reading response header", "reason", err)
 		return err
 	}
+
+	opLogger.Trace("response-header-read",
+		"expected-header-length", responseHeaderLength,
+		"read-header-length", n)
+
 	if uint64(n) != responseHeaderLength {
-		panic(fmt.Errorf("expected to read %d but read %d", responseHeaderLength, n))
+		opLogger.Error("response header read bytes count != expected count",
+			"expected-header-length", responseHeaderLength,
+			"read-header-length", n)
+		return fmt.Errorf("expected to read %d but read %d", responseHeaderLength, n)
 	}
 
 	responseHeader := &ybApi.ResponseHeader{}
 	protoErr := proto.Unmarshal(responseHeaderBuf, responseHeader)
 	if protoErr != nil {
+		opLogger.Error("failed unmarshalling response header", "reason", err)
 		return err
 	}
 
-	fmt.Println(fmt.Sprintf("DEBUG: Response to call id: %d, is error: %v, # of sidecars: %d",
-		*responseHeader.CallId,
-		*responseHeader.IsError,
-		len(responseHeader.SidecarOffsets)))
+	opLogger = opLogger.With("call-id", *responseHeader.CallId,
+		"is-error", *responseHeader.IsError,
+		"sidecars-count", len(responseHeader.SidecarOffsets))
 
 	// This here is currently a guess but I believe the corretc mechanism sits here:
 	// https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/CallResponse.java#L113
@@ -294,28 +318,43 @@ func (c *ybDefaultConnectedClient) readResponseInto(reader *bytes.Buffer, m prot
 	// hence the custom code here.
 	responsePayloadLength, _, err := utils.ReadVarint(reader)
 	if err != nil {
-		panic(err)
+		opLogger.Error("failed reading response payload length", "reason", err)
+		return err
 	}
+
+	opLogger.Trace("response-payload-length", "value", responsePayloadLength)
 
 	// if there was no data but the call did not result in an error,
 	// return successful no data response:
 	if !*responseHeader.IsError && responsePayloadLength == 0 {
+		opLogger.Debug("payload was empty but no error, assuming OK")
 		return nil
 	}
 
 	responsePayloadBuf := make([]byte, responsePayloadLength)
 	n, err = reader.Read(responsePayloadBuf)
 	if err != nil {
+		opLogger.Error("failed reading response payload", "reason", err)
 		return err
 	}
+
+	opLogger.Trace("response-payload-read",
+		"expected-payload-length", responsePayloadLength,
+		"read-payload-length", n)
+
 	if uint64(n) != responsePayloadLength {
+		opLogger.Error("response payload read bytes count != expected count",
+			"expected-payload-length", responsePayloadLength,
+			"read-payload-length", n)
 		return fmt.Errorf("expected to read %d but read %d", responsePayloadLength, n)
 	}
 
 	protoErr2 := proto.Unmarshal(responsePayloadBuf, m)
 	if protoErr2 != nil {
+		opLogger.Error("failed unmarshalling response payload", "reason", err)
 		return err
 	}
+
 	return nil
 }
 
