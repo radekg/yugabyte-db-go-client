@@ -104,6 +104,11 @@ func WriteMessages(b io.Writer, msgs ...protoreflect.ProtoMessage) error {
 	return nil
 }
 
+// PBool returns a pointer to an bool.
+func PBool(a bool) *bool {
+	return &a
+}
+
 // PInt32 returns a pointer to an int32.
 func PInt32(a int32) *int32 {
 	return &a
