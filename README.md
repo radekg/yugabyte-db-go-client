@@ -28,6 +28,7 @@ go run ./main.go [command] [flags]
 
 where the command is one of:
 
+- `check-exists`
 - `get-load-move-completion`
 - `get-master-registration`
 - `get-universe-config`
@@ -54,6 +55,12 @@ Logging flags:
 - `--log-force-color`: force colored output, default `false`
 
 #### Command specific flags
+
+##### check-exists
+
+- `--keyspace`: string, keyspace name to check in, default `<empty string>`
+- `--name`: string, table name to check for, default `<empty string>`
+- `--uuid`: string, table identified (uuid) to check for, default `<empty string>`
 
 ##### is-load-balanced
 

@@ -73,6 +73,7 @@ type YBConnectedClient interface {
 
 	GetLoadMoveCompletion() (*ybApi.GetLoadMovePercentResponsePB, error)
 	GetMasterRegistration() (*ybApi.GetMasterRegistrationResponsePB, error)
+	GetTableSchema(*configs.OpGetTableSchemaConfig) (*ybApi.GetTableSchemaResponsePB, error)
 	GetUniverseConfig() (*ybApi.GetMasterClusterConfigResponsePB, error)
 	IsLoadBalanced(*configs.OpIsLoadBalancedConfig) (*ybApi.IsLoadBalancedResponsePB, error)
 	ListMasters() (*ybApi.ListMastersResponsePB, error)
@@ -109,17 +110,9 @@ func (c *ybDefaultConnectedClient) GetLoadMoveCompletion() (*ybApi.GetLoadMovePe
 		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
 	}
 	payload := &ybApi.GetLoadMovePercentRequestPB{}
-	if err := c.sendMessages(requestHeader, payload); err != nil {
-		return nil, err
-	}
-	buffer, err := c.recv() // TODO: can move this to readResponseInto
-	if err != nil {
-		return nil, err
-	}
 	responsePayload := &ybApi.GetLoadMovePercentResponsePB{}
-	readResponseErr := c.readResponseInto(buffer, responsePayload)
-	if readResponseErr != nil {
-		return nil, readResponseErr
+	if err := c.executeOp(requestHeader, payload, responsePayload); err != nil {
+		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
 		return nil, fmt.Errorf(err.String())
@@ -138,17 +131,47 @@ func (c *ybDefaultConnectedClient) GetMasterRegistration() (*ybApi.GetMasterRegi
 		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
 	}
 	payload := &ybApi.GetMasterRegistrationRequestPB{}
-	if err := c.sendMessages(requestHeader, payload); err != nil {
-		return nil, err
-	}
-	buffer, err := c.recv() // TODO: can move this to readResponseInto
-	if err != nil {
-		return nil, err
-	}
 	responsePayload := &ybApi.GetMasterRegistrationResponsePB{}
-	readResponseErr := c.readResponseInto(buffer, responsePayload)
-	if readResponseErr != nil {
-		return nil, readResponseErr
+	if err := c.executeOp(requestHeader, payload, responsePayload); err != nil {
+		return nil, err
+	}
+	if err := responsePayload.GetError(); err != nil {
+		return nil, fmt.Errorf(err.String())
+	}
+	return responsePayload, nil
+}
+
+func (c *ybDefaultConnectedClient) GetTableSchema(opConfig *configs.OpGetTableSchemaConfig) (*ybApi.GetTableSchemaResponsePB, error) {
+	requestHeader := &ybApi.RequestHeader{
+		CallId: utils.PInt32(int32(c.callID())),
+		RemoteMethod: &ybApi.RemoteMethodPB{
+			ServiceName: utils.PString("yb.master.MasterService"),
+			MethodName:  utils.PString("GetTableSchema"),
+		},
+		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
+	}
+	payload := &ybApi.GetTableSchemaRequestPB{
+		Table: &ybApi.TableIdentifierPB{
+			Namespace: &ybApi.NamespaceIdentifierPB{
+				Name: utils.PString(opConfig.Keyspace),
+			},
+			TableName: func() *string {
+				if opConfig.Name == "" {
+					return nil
+				}
+				return utils.PString(opConfig.Name)
+			}(),
+			TableId: func() []byte {
+				if opConfig.UUID == "" {
+					return []byte{}
+				}
+				return []byte(opConfig.UUID)
+			}(),
+		},
+	}
+	responsePayload := &ybApi.GetTableSchemaResponsePB{}
+	if err := c.executeOp(requestHeader, payload, responsePayload); err != nil {
+		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
 		return nil, fmt.Errorf(err.String())
@@ -167,17 +190,9 @@ func (c *ybDefaultConnectedClient) GetUniverseConfig() (*ybApi.GetMasterClusterC
 		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
 	}
 	payload := &ybApi.GetMasterClusterConfigRequestPB{}
-	if err := c.sendMessages(requestHeader, payload); err != nil {
-		return nil, err
-	}
-	buffer, err := c.recv() // TODO: can move this to readResponseInto
-	if err != nil {
-		return nil, err
-	}
 	responsePayload := &ybApi.GetMasterClusterConfigResponsePB{}
-	readResponseErr := c.readResponseInto(buffer, responsePayload)
-	if readResponseErr != nil {
-		return nil, readResponseErr
+	if err := c.executeOp(requestHeader, payload, responsePayload); err != nil {
+		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
 		return nil, fmt.Errorf(err.String())
@@ -187,7 +202,6 @@ func (c *ybDefaultConnectedClient) GetUniverseConfig() (*ybApi.GetMasterClusterC
 
 // IsLoadBalanced returns a list of masters or an error if call failed.
 func (c *ybDefaultConnectedClient) IsLoadBalanced(opConfig *configs.OpIsLoadBalancedConfig) (*ybApi.IsLoadBalancedResponsePB, error) {
-
 	requestHeader := &ybApi.RequestHeader{
 		CallId: utils.PInt32(int32(c.callID())),
 		RemoteMethod: &ybApi.RemoteMethodPB{
@@ -196,7 +210,6 @@ func (c *ybDefaultConnectedClient) IsLoadBalanced(opConfig *configs.OpIsLoadBala
 		},
 		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
 	}
-
 	payload := &ybApi.IsLoadBalancedRequestPB{
 		ExpectedNumServers: func() *int32 {
 			if opConfig.ExpectedNumServers > 0 {
@@ -205,18 +218,9 @@ func (c *ybDefaultConnectedClient) IsLoadBalanced(opConfig *configs.OpIsLoadBala
 			return nil
 		}(),
 	}
-
-	if err := c.sendMessages(requestHeader, payload); err != nil {
-		return nil, err
-	}
-	buffer, err := c.recv()
-	if err != nil {
-		return nil, err
-	}
 	responsePayload := &ybApi.IsLoadBalancedResponsePB{}
-	readResponseErr := c.readResponseInto(buffer, responsePayload)
-	if readResponseErr != nil {
-		return nil, readResponseErr
+	if err := c.executeOp(requestHeader, payload, responsePayload); err != nil {
+		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
 		return nil, fmt.Errorf(err.String())
@@ -235,17 +239,9 @@ func (c *ybDefaultConnectedClient) ListMasters() (*ybApi.ListMastersResponsePB, 
 		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
 	}
 	payload := &ybApi.ListMastersRequestPB{}
-	if err := c.sendMessages(requestHeader, payload); err != nil {
-		return nil, err
-	}
-	buffer, err := c.recv()
-	if err != nil {
-		return nil, err
-	}
 	responsePayload := &ybApi.ListMastersResponsePB{}
-	readResponseErr := c.readResponseInto(buffer, responsePayload)
-	if readResponseErr != nil {
-		return nil, readResponseErr
+	if err := c.executeOp(requestHeader, payload, responsePayload); err != nil {
+		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
 		return nil, fmt.Errorf(err.String())
@@ -266,17 +262,9 @@ func (c *ybDefaultConnectedClient) ListTabletServers(opConfig *configs.OpListTab
 	payload := &ybApi.ListTabletServersRequestPB{
 		PrimaryOnly: utils.PBool(opConfig.PrimaryOnly),
 	}
-	if err := c.sendMessages(requestHeader, payload); err != nil {
-		return nil, err
-	}
-	buffer, err := c.recv()
-	if err != nil {
-		return nil, err
-	}
 	responsePayload := &ybApi.ListTabletServersResponsePB{}
-	readResponseErr := c.readResponseInto(buffer, responsePayload)
-	if readResponseErr != nil {
-		return nil, readResponseErr
+	if err := c.executeOp(requestHeader, payload, responsePayload); err != nil {
+		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
 		return nil, fmt.Errorf(err.String())
@@ -295,17 +283,9 @@ func (c *ybDefaultConnectedClient) Ping() (*ybApi.PingResponsePB, error) {
 		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
 	}
 	payload := &ybApi.PingRequestPB{}
-	if err := c.sendMessages(requestHeader, payload); err != nil {
-		return nil, err
-	}
-	buffer, err := c.recv()
-	if err != nil {
-		return nil, err
-	}
 	responsePayload := &ybApi.PingResponsePB{}
-	readResponseErr := c.readResponseInto(buffer, responsePayload)
-	if readResponseErr != nil {
-		return nil, readResponseErr
+	if err := c.executeOp(requestHeader, payload, responsePayload); err != nil {
+		return nil, err
 	}
 	return responsePayload, nil
 }
@@ -487,13 +467,21 @@ func (c *ybDefaultConnectedClient) readResponseInto(reader *bytes.Buffer, m prot
 	return nil
 }
 
-func (c *ybDefaultConnectedClient) sendMessages(msgs ...protoreflect.ProtoMessage) error {
+func (c *ybDefaultConnectedClient) executeOp(header, payload, result protoreflect.ProtoMessage) error {
 	b := bytes.NewBuffer([]byte{})
-	if err := utils.WriteMessages(b, msgs...); err != nil {
+	if err := utils.WriteMessages(b, header, payload); err != nil {
 		return err
 	}
 	if err := c.send(b); err != nil {
 		return err
+	}
+	buffer, err := c.recv() // TODO: can move this to readResponseInto
+	if err != nil {
+		return err
+	}
+	readResponseErr := c.readResponseInto(buffer, result)
+	if readResponseErr != nil {
+		return readResponseErr
 	}
 	return nil
 }
