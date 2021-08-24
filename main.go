@@ -10,6 +10,7 @@ import (
 	"github.com/radekg/yugabyte-db-go-client/cmd/isloadbalanced"
 	"github.com/radekg/yugabyte-db-go-client/cmd/listmasters"
 	"github.com/radekg/yugabyte-db-go-client/cmd/listtabletservers"
+	"github.com/radekg/yugabyte-db-go-client/cmd/ping"
 	"github.com/spf13/cobra"
 )
 
@@ -30,6 +31,7 @@ func init() {
 	rootCmd.AddCommand(isloadbalanced.Command)
 	rootCmd.AddCommand(listmasters.Command)
 	rootCmd.AddCommand(listtabletservers.Command)
+	rootCmd.AddCommand(ping.Command)
 }
 
 func main() {

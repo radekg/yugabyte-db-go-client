@@ -77,6 +77,7 @@ type YBConnectedClient interface {
 	IsLoadBalanced(*configs.OpIsLoadBalancedConfig) (*ybApi.IsLoadBalancedResponsePB, error)
 	ListMasters() (*ybApi.ListMastersResponsePB, error)
 	ListTabletServers(*configs.OpListTabletServersConfig) (*ybApi.ListTabletServersResponsePB, error)
+	Ping() (*ybApi.PingResponsePB, error)
 
 	OnConnected() <-chan struct{}
 	OnConnectError() <-chan error
@@ -279,6 +280,32 @@ func (c *ybDefaultConnectedClient) ListTabletServers(opConfig *configs.OpListTab
 	}
 	if err := responsePayload.GetError(); err != nil {
 		return nil, fmt.Errorf(err.String())
+	}
+	return responsePayload, nil
+}
+
+// Ping pings a certain YB server.
+func (c *ybDefaultConnectedClient) Ping() (*ybApi.PingResponsePB, error) {
+	requestHeader := &ybApi.RequestHeader{
+		CallId: utils.PInt32(int32(c.callID())),
+		RemoteMethod: &ybApi.RemoteMethodPB{
+			ServiceName: utils.PString("yb.server.GenericService"),
+			MethodName:  utils.PString("Ping"),
+		},
+		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
+	}
+	payload := &ybApi.PingRequestPB{}
+	if err := c.sendMessages(requestHeader, payload); err != nil {
+		return nil, err
+	}
+	buffer, err := c.recv()
+	if err != nil {
+		return nil, err
+	}
+	responsePayload := &ybApi.PingResponsePB{}
+	readResponseErr := c.readResponseInto(buffer, responsePayload)
+	if readResponseErr != nil {
+		return nil, readResponseErr
 	}
 	return responsePayload, nil
 }

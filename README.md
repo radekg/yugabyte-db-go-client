@@ -34,6 +34,7 @@ where the command is one of:
 - `is-load-balanced`
 - `list-masters`
 - `list-tablet-servers`
+- `ping`
 
 ### Flags
 
@@ -61,3 +62,8 @@ Logging flags:
 ##### list-tablet-servers
 
 - `--primary-only`: boolean, list primary tablet servers only, default `false`
+
+##### ping
+
+- `--host`: string, host to ping, default `<empty string>`
+- `--port`: int, port to ping, default `0`, must be higher than `0`
