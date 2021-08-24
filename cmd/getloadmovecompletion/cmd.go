@@ -38,7 +38,7 @@ func run(cobraCommand *cobra.Command, _ []string) {
 
 func processCommand() int {
 
-	logger := logConfig.NewLogger("get_load_move_completion")
+	logger := logConfig.NewLogger("get-load-move-completion")
 
 	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig} {
 		if err := validatingConfig.Validate(); err != nil {

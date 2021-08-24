@@ -1,4 +1,4 @@
-package getmasterregistration
+package isserverready
 
 import (
 	"encoding/json"
@@ -12,8 +12,8 @@ import (
 
 // Command is the command declaration.
 var Command = &cobra.Command{
-	Use:   "get-master-registration",
-	Short: "Get master registration",
+	Use:   "is-server-ready",
+	Short: "Check if server is ready to serve IO requests",
 	Run:   run,
 	Long:  ``,
 }
@@ -21,11 +21,13 @@ var Command = &cobra.Command{
 var (
 	commandConfig = configs.NewCliConfig()
 	logConfig     = configs.NewLogginConfig()
+	opConfig      = configs.NewOpIsServerReadyonfig()
 )
 
 func initFlags() {
 	Command.Flags().AddFlagSet(commandConfig.FlagSet())
 	Command.Flags().AddFlagSet(logConfig.FlagSet())
+	Command.Flags().AddFlagSet(opConfig.FlagSet())
 }
 
 func init() {
@@ -38,22 +40,27 @@ func run(cobraCommand *cobra.Command, _ []string) {
 
 func processCommand() int {
 
-	logger := logConfig.NewLogger("get-master-registration")
+	logger := logConfig.NewLogger("is-server-ready")
 
-	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig} {
+	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig, opConfig} {
 		if err := validatingConfig.Validate(); err != nil {
 			logger.Error("configuration is invalid", "reason", err)
 			return 1
 		}
 	}
 
-	connectedClient, err := client.Connect(configs.NewYBClientConfigFromCliConfig(commandConfig), logger.Named("client"))
+	cfg := configs.NewYBClientConfigFromCliConfig(commandConfig)
+	cfg.MasterHostPort = fmt.Sprintf("%s:%d", opConfig.Host, opConfig.Port)
+	// TODO: REVISIT: what's the is-tserver flag for?
+	connectedClient, err := client.Connect(cfg, logger.Named("client"))
 	if err != nil {
-		logger.Error("failed creating a client", "reason", err)
-		return 1
+		// careful: different than other commands:
+		logger.Error("server not reachable", "reason", err)
+		return 2
 	}
 	select {
 	case err := <-connectedClient.OnConnectError():
+		// TODO: LATER: in this case, this may indicate the service unavailability
 		logger.Error("failed connecting a client", "reason", err)
 		return 1
 	case <-connectedClient.OnConnected():
@@ -61,13 +68,14 @@ func processCommand() int {
 	}
 	defer connectedClient.Close()
 
-	registration, err := connectedClient.GetMasterRegistration()
+	responsePayload, err := connectedClient.Ping()
 	if err != nil {
-		logger.Error("failed reading master registration", "reason", err)
+		// TODO: LATER: in this case, this may indicate the service unavailability
+		logger.Error("failed reading server ready response", "reason", err)
 		return 1
 	}
 
-	jsonBytes, err := json.MarshalIndent(registration, "", "  ")
+	jsonBytes, err := json.MarshalIndent(responsePayload, "", "  ")
 	if err != nil {
 		logger.Error("failed marshaling JSON response", "reason", err)
 		return 1

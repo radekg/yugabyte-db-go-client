@@ -28,14 +28,15 @@ go run ./main.go [command] [flags]
 
 where the command is one of:
 
-- `check-exists`
-- `get-load-move-completion`
-- `get-master-registration`
-- `get-universe-config`
-- `is-load-balanced`
-- `list-masters`
-- `list-tablet-servers`
-- `ping`
+- `check-exists`: Check that a table exists.
+- `get-load-move-completion`: Get the completion percentage of tablet load move from blacklisted servers.
+- `get-master-registration`: Get master registration info.
+- `get-universe-config`: Get the placement info and blacklist info of the universe.
+- `is-load-balanced`: Check if master leader thinks that the load is balanced across tservers.
+- `is-server-ready`: Check if server is ready to serve IO requests.
+- `list-masters`: List all the masters in this database.
+- `list-tablet-servers`: List all the tablet servers in this database.
+- `ping`: Ping a certain YB server.
 
 ### Flags
 
@@ -74,3 +75,9 @@ Logging flags:
 
 - `--host`: string, host to ping, default `<empty string>`
 - `--port`: int, port to ping, default `0`, must be higher than `0`
+
+##### is-server-ready
+
+- `--host`: string, host to check, default `<empty string>`
+- `--port`: int, port to check, default `0`, must be higher than `0`
+- `--is-tserver`: boolean, when `true` - indicated a TServer, default `false`

@@ -76,6 +76,7 @@ type YBConnectedClient interface {
 	GetTableSchema(*configs.OpGetTableSchemaConfig) (*ybApi.GetTableSchemaResponsePB, error)
 	GetUniverseConfig() (*ybApi.GetMasterClusterConfigResponsePB, error)
 	IsLoadBalanced(*configs.OpIsLoadBalancedConfig) (*ybApi.IsLoadBalancedResponsePB, error)
+	IsTabletServerReady() (*ybApi.IsTabletServerReadyResponsePB, error)
 	ListMasters() (*ybApi.ListMastersResponsePB, error)
 	ListTabletServers(*configs.OpListTabletServersConfig) (*ybApi.ListTabletServersResponsePB, error)
 	Ping() (*ybApi.PingResponsePB, error)
@@ -141,6 +142,7 @@ func (c *ybDefaultConnectedClient) GetMasterRegistration() (*ybApi.GetMasterRegi
 	return responsePayload, nil
 }
 
+// GetTableSchema returns table schema if table exists or an error.
 func (c *ybDefaultConnectedClient) GetTableSchema(opConfig *configs.OpGetTableSchemaConfig) (*ybApi.GetTableSchemaResponsePB, error) {
 	requestHeader := &ybApi.RequestHeader{
 		CallId: utils.PInt32(int32(c.callID())),
@@ -224,6 +226,24 @@ func (c *ybDefaultConnectedClient) IsLoadBalanced(opConfig *configs.OpIsLoadBala
 	}
 	if err := responsePayload.GetError(); err != nil {
 		return nil, fmt.Errorf(err.String())
+	}
+	return responsePayload, nil
+}
+
+// IsTabletServerReady checks if a given tablet server is ready or returns an error.
+func (c *ybDefaultConnectedClient) IsTabletServerReady() (*ybApi.IsTabletServerReadyResponsePB, error) {
+	requestHeader := &ybApi.RequestHeader{
+		CallId: utils.PInt32(int32(c.callID())),
+		RemoteMethod: &ybApi.RemoteMethodPB{
+			ServiceName: utils.PString("yb.tserver.TabletServerService"),
+			MethodName:  utils.PString("IsTabletServerReady"),
+		},
+		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
+	}
+	payload := &ybApi.IsTabletServerReadyRequestPB{}
+	responsePayload := &ybApi.IsTabletServerReadyResponsePB{}
+	if err := c.executeOp(requestHeader, payload, responsePayload); err != nil {
+		return nil, err
 	}
 	return responsePayload, nil
 }

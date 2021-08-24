@@ -53,12 +53,13 @@ func processCommand() int {
 	cfg.MasterHostPort = fmt.Sprintf("%s:%d", opConfig.Host, opConfig.Port)
 	connectedClient, err := client.Connect(cfg, logger.Named("client"))
 	if err != nil {
-		logger.Error("failed creating a client", "reason", err)
-		return 1
+		// careful: different than other commands:
+		logger.Error("server not reachable", "reason", err)
+		return 2
 	}
 	select {
 	case err := <-connectedClient.OnConnectError():
-		// LATER: in this case, this may indicate the service unavailability
+		// TODO: LATER: in this case, this may indicate the service unavailability
 		logger.Error("failed connecting a client", "reason", err)
 		return 1
 	case <-connectedClient.OnConnected():
@@ -68,7 +69,7 @@ func processCommand() int {
 
 	responsePayload, err := connectedClient.Ping()
 	if err != nil {
-		// LATER: in this case, this may indicate the service unavailability
+		// TODO: LATER: in this case, this may indicate the service unavailability
 		logger.Error("failed reading ping response", "reason", err)
 		return 1
 	}

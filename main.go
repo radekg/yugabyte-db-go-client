@@ -9,6 +9,7 @@ import (
 	"github.com/radekg/yugabyte-db-go-client/cmd/getmasterregistration"
 	"github.com/radekg/yugabyte-db-go-client/cmd/getuniverseconfig"
 	"github.com/radekg/yugabyte-db-go-client/cmd/isloadbalanced"
+	"github.com/radekg/yugabyte-db-go-client/cmd/isserverready"
 	"github.com/radekg/yugabyte-db-go-client/cmd/listmasters"
 	"github.com/radekg/yugabyte-db-go-client/cmd/listtabletservers"
 	"github.com/radekg/yugabyte-db-go-client/cmd/ping"
@@ -31,6 +32,7 @@ func init() {
 	rootCmd.AddCommand(getmasterregistration.Command)
 	rootCmd.AddCommand(getuniverseconfig.Command)
 	rootCmd.AddCommand(isloadbalanced.Command)
+	rootCmd.AddCommand(isserverready.Command)
 	rootCmd.AddCommand(listmasters.Command)
 	rootCmd.AddCommand(listtabletservers.Command)
 	rootCmd.AddCommand(ping.Command)
