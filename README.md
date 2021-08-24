@@ -28,7 +28,9 @@ go run ./main.go [command] [flags]
 
 where the command is one of:
 
+- `get-load-move-completion`
 - `get-master-registration`
+- `get-universe-config`
 - `is-load-balanced`
 - `list-masters`
 - `list-tablet-servers`
