@@ -73,6 +73,7 @@ type YBConnectedClient interface {
 
 	GetLoadMoveCompletion() (*ybApi.GetLoadMovePercentResponsePB, error)
 	GetMasterRegistration() (*ybApi.GetMasterRegistrationResponsePB, error)
+	GetUniverseConfig() (*ybApi.GetMasterClusterConfigResponsePB, error)
 	IsLoadBalanced(*configs.OpIsLoadBalancedConfig) (*ybApi.IsLoadBalancedResponsePB, error)
 	ListMasters() (*ybApi.ListMastersResponsePB, error)
 	ListTabletServers(*configs.OpListTabletServersConfig) (*ybApi.ListTabletServersResponsePB, error)
@@ -144,6 +145,35 @@ func (c *ybDefaultConnectedClient) GetMasterRegistration() (*ybApi.GetMasterRegi
 		return nil, err
 	}
 	responsePayload := &ybApi.GetMasterRegistrationResponsePB{}
+	readResponseErr := c.readResponseInto(buffer, responsePayload)
+	if readResponseErr != nil {
+		return nil, readResponseErr
+	}
+	if err := responsePayload.GetError(); err != nil {
+		return nil, fmt.Errorf(err.String())
+	}
+	return responsePayload, nil
+}
+
+// GetUniverseConfig get the placement info and blacklist info of the universe.
+func (c *ybDefaultConnectedClient) GetUniverseConfig() (*ybApi.GetMasterClusterConfigResponsePB, error) {
+	requestHeader := &ybApi.RequestHeader{
+		CallId: utils.PInt32(int32(c.callID())),
+		RemoteMethod: &ybApi.RemoteMethodPB{
+			ServiceName: utils.PString("yb.master.MasterService"),
+			MethodName:  utils.PString("GetMasterClusterConfig"),
+		},
+		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
+	}
+	payload := &ybApi.GetMasterClusterConfigRequestPB{}
+	if err := c.sendMessages(requestHeader, payload); err != nil {
+		return nil, err
+	}
+	buffer, err := c.recv() // TODO: can move this to readResponseInto
+	if err != nil {
+		return nil, err
+	}
+	responsePayload := &ybApi.GetMasterClusterConfigResponsePB{}
 	readResponseErr := c.readResponseInto(buffer, responsePayload)
 	if readResponseErr != nil {
 		return nil, readResponseErr

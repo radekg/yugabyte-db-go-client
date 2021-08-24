@@ -1,4 +1,4 @@
-package getloadmovecompletion
+package getuniverseconfig
 
 import (
 	"encoding/json"
@@ -12,8 +12,8 @@ import (
 
 // Command is the command declaration.
 var Command = &cobra.Command{
-	Use:   "get-load-move-completion",
-	Short: "Get the completion percentage of tablet load move from blacklisted servers",
+	Use:   "get-universe-config",
+	Short: "Get the placement info and blacklist info of the universe",
 	Run:   run,
 	Long:  ``,
 }
@@ -38,7 +38,7 @@ func run(cobraCommand *cobra.Command, _ []string) {
 
 func processCommand() int {
 
-	logger := logConfig.NewLogger("get_load_move_completion")
+	logger := logConfig.NewLogger("get_universe_config")
 
 	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig} {
 		if err := validatingConfig.Validate(); err != nil {
@@ -61,9 +61,9 @@ func processCommand() int {
 	}
 	defer connectedClient.Close()
 
-	registration, err := connectedClient.GetLoadMoveCompletion()
+	registration, err := connectedClient.GetUniverseConfig()
 	if err != nil {
-		logger.Error("failed reading load move completion", "reason", err)
+		logger.Error("failed reading universe config", "reason", err)
 		return 1
 	}
 
