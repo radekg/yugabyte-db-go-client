@@ -71,6 +71,7 @@ func connectTLS(cfg *configs.YBClientConfig, logger hclog.Logger) (YBConnectedCl
 type YBConnectedClient interface {
 	Close() error
 
+	GetLoadMoveCompletion() (*ybApi.GetLoadMovePercentResponsePB, error)
 	GetMasterRegistration() (*ybApi.GetMasterRegistrationResponsePB, error)
 	IsLoadBalanced(*configs.OpIsLoadBalancedConfig) (*ybApi.IsLoadBalancedResponsePB, error)
 	ListMasters() (*ybApi.ListMastersResponsePB, error)
@@ -93,6 +94,35 @@ type ybDefaultConnectedClient struct {
 // Close closes a connected client.
 func (c *ybDefaultConnectedClient) Close() error {
 	return c.closeFunc()
+}
+
+// GetLoadMoveCompletion gets the completion percentage of tablet load move from blacklisted servers.
+func (c *ybDefaultConnectedClient) GetLoadMoveCompletion() (*ybApi.GetLoadMovePercentResponsePB, error) {
+	requestHeader := &ybApi.RequestHeader{
+		CallId: utils.PInt32(int32(c.callID())),
+		RemoteMethod: &ybApi.RemoteMethodPB{
+			ServiceName: utils.PString("yb.master.MasterService"),
+			MethodName:  utils.PString("GetLoadMoveCompletion"),
+		},
+		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
+	}
+	payload := &ybApi.GetLoadMovePercentRequestPB{}
+	if err := c.sendMessages(requestHeader, payload); err != nil {
+		return nil, err
+	}
+	buffer, err := c.recv() // TODO: can move this to readResponseInto
+	if err != nil {
+		return nil, err
+	}
+	responsePayload := &ybApi.GetLoadMovePercentResponsePB{}
+	readResponseErr := c.readResponseInto(buffer, responsePayload)
+	if readResponseErr != nil {
+		return nil, readResponseErr
+	}
+	if err := responsePayload.GetError(); err != nil {
+		return nil, fmt.Errorf(err.String())
+	}
+	return responsePayload, nil
 }
 
 // GetMasterRegistration retrieves the master registration information or error if the request failed.

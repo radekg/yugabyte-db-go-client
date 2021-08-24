@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/radekg/yugabyte-db-go-client/cmd/getloadmovecompletion"
 	"github.com/radekg/yugabyte-db-go-client/cmd/getmasterregistration"
 	"github.com/radekg/yugabyte-db-go-client/cmd/isloadbalanced"
 	"github.com/radekg/yugabyte-db-go-client/cmd/listmasters"
@@ -22,6 +23,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
+	rootCmd.AddCommand(getloadmovecompletion.Command)
 	rootCmd.AddCommand(getmasterregistration.Command)
 	rootCmd.AddCommand(isloadbalanced.Command)
 	rootCmd.AddCommand(listmasters.Command)
