@@ -32,7 +32,7 @@ where the command is one of:
 - `get-load-move-completion`: Get the completion percentage of tablet load move from blacklisted servers.
 - `get-master-registration`: Get master registration info.
 - `get-universe-config`: Get the placement info and blacklist info of the universe.
-- `is-load-balanced`: Check if master leader thinks that the load is balanced across tservers.
+- `is-load-balanced`: Check if master leader thinks that the load is balanced across TServers.
 - `is-server-ready`: Check if server is ready to serve IO requests.
 - `list-masters`: List all the masters in this database.
 - `list-tablet-servers`: List all the tablet servers in this database.
