@@ -3,6 +3,7 @@ package client
 import (
 	"strings"
 
+	"github.com/radekg/yugabyte-db-go-client/utils"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -73,6 +74,7 @@ func namesToString(names ...protoreflect.Name) string {
 type ServiceInfo interface {
 	Method() string
 	Service() string
+	ToRemoteMethodPB() *ybApi.RemoteMethodPB
 }
 
 type defaultServiceInfo struct {
@@ -83,8 +85,16 @@ type defaultServiceInfo struct {
 func (i *defaultServiceInfo) Method() string {
 	return i.method
 }
+
 func (i *defaultServiceInfo) Service() string {
 	return i.service
+}
+
+func (i *defaultServiceInfo) ToRemoteMethodPB() *ybApi.RemoteMethodPB {
+	return &ybApi.RemoteMethodPB{
+		ServiceName: utils.PString(i.Service()),
+		MethodName:  utils.PString(i.Method()),
+	}
 }
 
 // ServiceRegistry contains the information about registered services and inputs.

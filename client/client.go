@@ -40,8 +40,9 @@ func connect(cfg *configs.YBClientConfig, logger hclog.Logger) (YBConnectedClien
 		closeFunc: func() error {
 			return conn.Close()
 		},
-		conn:   conn,
-		logger: logger,
+		conn:        conn,
+		logger:      logger,
+		svcRegistry: NewDefaultServiceRegistry(),
 	}
 	return client.afterConnect(), nil
 }
@@ -59,8 +60,9 @@ func connectTLS(cfg *configs.YBClientConfig, logger hclog.Logger) (YBConnectedCl
 		closeFunc: func() error {
 			return conn.Close()
 		},
-		conn:   conn,
-		logger: logger,
+		conn:        conn,
+		logger:      logger,
+		svcRegistry: NewDefaultServiceRegistry(),
 	}
 	return client.afterConnect(), nil
 }
@@ -93,6 +95,7 @@ type ybDefaultConnectedClient struct {
 	closeFunc      func() error
 	conn           net.Conn
 	logger         hclog.Logger
+	svcRegistry    ServiceRegistry
 }
 
 // Close closes a connected client.
@@ -102,17 +105,9 @@ func (c *ybDefaultConnectedClient) Close() error {
 
 // GetLoadMoveCompletion gets the completion percentage of tablet load move from blacklisted servers.
 func (c *ybDefaultConnectedClient) GetLoadMoveCompletion() (*ybApi.GetLoadMovePercentResponsePB, error) {
-	requestHeader := &ybApi.RequestHeader{
-		CallId: utils.PInt32(int32(c.callID())),
-		RemoteMethod: &ybApi.RemoteMethodPB{
-			ServiceName: utils.PString("yb.master.MasterService"),
-			MethodName:  utils.PString("GetLoadMoveCompletion"),
-		},
-		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
-	}
 	payload := &ybApi.GetLoadMovePercentRequestPB{}
 	responsePayload := &ybApi.GetLoadMovePercentResponsePB{}
-	if err := c.executeOp(requestHeader, payload, responsePayload); err != nil {
+	if err := c.executeOp(payload, responsePayload); err != nil {
 		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
@@ -123,17 +118,9 @@ func (c *ybDefaultConnectedClient) GetLoadMoveCompletion() (*ybApi.GetLoadMovePe
 
 // GetMasterRegistration retrieves the master registration information or error if the request failed.
 func (c *ybDefaultConnectedClient) GetMasterRegistration() (*ybApi.GetMasterRegistrationResponsePB, error) {
-	requestHeader := &ybApi.RequestHeader{
-		CallId: utils.PInt32(int32(c.callID())),
-		RemoteMethod: &ybApi.RemoteMethodPB{
-			ServiceName: utils.PString("yb.master.MasterService"),
-			MethodName:  utils.PString("GetMasterRegistration"),
-		},
-		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
-	}
 	payload := &ybApi.GetMasterRegistrationRequestPB{}
 	responsePayload := &ybApi.GetMasterRegistrationResponsePB{}
-	if err := c.executeOp(requestHeader, payload, responsePayload); err != nil {
+	if err := c.executeOp(payload, responsePayload); err != nil {
 		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
@@ -144,14 +131,6 @@ func (c *ybDefaultConnectedClient) GetMasterRegistration() (*ybApi.GetMasterRegi
 
 // GetTableSchema returns table schema if table exists or an error.
 func (c *ybDefaultConnectedClient) GetTableSchema(opConfig *configs.OpGetTableSchemaConfig) (*ybApi.GetTableSchemaResponsePB, error) {
-	requestHeader := &ybApi.RequestHeader{
-		CallId: utils.PInt32(int32(c.callID())),
-		RemoteMethod: &ybApi.RemoteMethodPB{
-			ServiceName: utils.PString("yb.master.MasterService"),
-			MethodName:  utils.PString("GetTableSchema"),
-		},
-		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
-	}
 	payload := &ybApi.GetTableSchemaRequestPB{
 		Table: &ybApi.TableIdentifierPB{
 			Namespace: &ybApi.NamespaceIdentifierPB{
@@ -172,7 +151,7 @@ func (c *ybDefaultConnectedClient) GetTableSchema(opConfig *configs.OpGetTableSc
 		},
 	}
 	responsePayload := &ybApi.GetTableSchemaResponsePB{}
-	if err := c.executeOp(requestHeader, payload, responsePayload); err != nil {
+	if err := c.executeOp(payload, responsePayload); err != nil {
 		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
@@ -183,17 +162,9 @@ func (c *ybDefaultConnectedClient) GetTableSchema(opConfig *configs.OpGetTableSc
 
 // GetUniverseConfig get the placement info and blacklist info of the universe.
 func (c *ybDefaultConnectedClient) GetUniverseConfig() (*ybApi.GetMasterClusterConfigResponsePB, error) {
-	requestHeader := &ybApi.RequestHeader{
-		CallId: utils.PInt32(int32(c.callID())),
-		RemoteMethod: &ybApi.RemoteMethodPB{
-			ServiceName: utils.PString("yb.master.MasterService"),
-			MethodName:  utils.PString("GetMasterClusterConfig"),
-		},
-		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
-	}
 	payload := &ybApi.GetMasterClusterConfigRequestPB{}
 	responsePayload := &ybApi.GetMasterClusterConfigResponsePB{}
-	if err := c.executeOp(requestHeader, payload, responsePayload); err != nil {
+	if err := c.executeOp(payload, responsePayload); err != nil {
 		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
@@ -204,14 +175,6 @@ func (c *ybDefaultConnectedClient) GetUniverseConfig() (*ybApi.GetMasterClusterC
 
 // IsLoadBalanced returns a list of masters or an error if call failed.
 func (c *ybDefaultConnectedClient) IsLoadBalanced(opConfig *configs.OpIsLoadBalancedConfig) (*ybApi.IsLoadBalancedResponsePB, error) {
-	requestHeader := &ybApi.RequestHeader{
-		CallId: utils.PInt32(int32(c.callID())),
-		RemoteMethod: &ybApi.RemoteMethodPB{
-			ServiceName: utils.PString("yb.master.MasterService"),
-			MethodName:  utils.PString("IsLoadBalanced"),
-		},
-		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
-	}
 	payload := &ybApi.IsLoadBalancedRequestPB{
 		ExpectedNumServers: func() *int32 {
 			if opConfig.ExpectedNumServers > 0 {
@@ -221,7 +184,7 @@ func (c *ybDefaultConnectedClient) IsLoadBalanced(opConfig *configs.OpIsLoadBala
 		}(),
 	}
 	responsePayload := &ybApi.IsLoadBalancedResponsePB{}
-	if err := c.executeOp(requestHeader, payload, responsePayload); err != nil {
+	if err := c.executeOp(payload, responsePayload); err != nil {
 		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
@@ -232,17 +195,9 @@ func (c *ybDefaultConnectedClient) IsLoadBalanced(opConfig *configs.OpIsLoadBala
 
 // IsTabletServerReady checks if a given tablet server is ready or returns an error.
 func (c *ybDefaultConnectedClient) IsTabletServerReady() (*ybApi.IsTabletServerReadyResponsePB, error) {
-	requestHeader := &ybApi.RequestHeader{
-		CallId: utils.PInt32(int32(c.callID())),
-		RemoteMethod: &ybApi.RemoteMethodPB{
-			ServiceName: utils.PString("yb.tserver.TabletServerService"),
-			MethodName:  utils.PString("IsTabletServerReady"),
-		},
-		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
-	}
 	payload := &ybApi.IsTabletServerReadyRequestPB{}
 	responsePayload := &ybApi.IsTabletServerReadyResponsePB{}
-	if err := c.executeOp(requestHeader, payload, responsePayload); err != nil {
+	if err := c.executeOp(payload, responsePayload); err != nil {
 		return nil, err
 	}
 	return responsePayload, nil
@@ -250,17 +205,9 @@ func (c *ybDefaultConnectedClient) IsTabletServerReady() (*ybApi.IsTabletServerR
 
 // ListMasters returns a list of masters or an error if call failed.
 func (c *ybDefaultConnectedClient) ListMasters() (*ybApi.ListMastersResponsePB, error) {
-	requestHeader := &ybApi.RequestHeader{
-		CallId: utils.PInt32(int32(c.callID())),
-		RemoteMethod: &ybApi.RemoteMethodPB{
-			ServiceName: utils.PString("yb.master.MasterService"),
-			MethodName:  utils.PString("ListMasters"),
-		},
-		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
-	}
 	payload := &ybApi.ListMastersRequestPB{}
 	responsePayload := &ybApi.ListMastersResponsePB{}
-	if err := c.executeOp(requestHeader, payload, responsePayload); err != nil {
+	if err := c.executeOp(payload, responsePayload); err != nil {
 		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
@@ -271,19 +218,11 @@ func (c *ybDefaultConnectedClient) ListMasters() (*ybApi.ListMastersResponsePB, 
 
 // ListTabletServers returns a list of tablet servers or an error if call failed.
 func (c *ybDefaultConnectedClient) ListTabletServers(opConfig *configs.OpListTabletServersConfig) (*ybApi.ListTabletServersResponsePB, error) {
-	requestHeader := &ybApi.RequestHeader{
-		CallId: utils.PInt32(int32(c.callID())),
-		RemoteMethod: &ybApi.RemoteMethodPB{
-			ServiceName: utils.PString("yb.master.MasterService"),
-			MethodName:  utils.PString("ListTabletServers"),
-		},
-		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
-	}
 	payload := &ybApi.ListTabletServersRequestPB{
 		PrimaryOnly: utils.PBool(opConfig.PrimaryOnly),
 	}
 	responsePayload := &ybApi.ListTabletServersResponsePB{}
-	if err := c.executeOp(requestHeader, payload, responsePayload); err != nil {
+	if err := c.executeOp(payload, responsePayload); err != nil {
 		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
@@ -294,17 +233,9 @@ func (c *ybDefaultConnectedClient) ListTabletServers(opConfig *configs.OpListTab
 
 // Ping pings a certain YB server.
 func (c *ybDefaultConnectedClient) Ping() (*ybApi.PingResponsePB, error) {
-	requestHeader := &ybApi.RequestHeader{
-		CallId: utils.PInt32(int32(c.callID())),
-		RemoteMethod: &ybApi.RemoteMethodPB{
-			ServiceName: utils.PString("yb.server.GenericService"),
-			MethodName:  utils.PString("Ping"),
-		},
-		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
-	}
 	payload := &ybApi.PingRequestPB{}
 	responsePayload := &ybApi.PingResponsePB{}
-	if err := c.executeOp(requestHeader, payload, responsePayload); err != nil {
+	if err := c.executeOp(payload, responsePayload); err != nil {
 		return nil, err
 	}
 	return responsePayload, nil
@@ -323,6 +254,7 @@ func (c *ybDefaultConnectedClient) OnConnectError() <-chan error {
 /// Private interface
 
 func (c *ybDefaultConnectedClient) afterConnect() *ybDefaultConnectedClient {
+	loadServiceDefinitions(c.svcRegistry)
 	go func() {
 		c.logger.Debug("sending connection header")
 		header := append([]byte("YB"), 1)
@@ -487,9 +419,21 @@ func (c *ybDefaultConnectedClient) readResponseInto(reader *bytes.Buffer, m prot
 	return nil
 }
 
-func (c *ybDefaultConnectedClient) executeOp(header, payload, result protoreflect.ProtoMessage) error {
+func (c *ybDefaultConnectedClient) executeOp(payload, result protoreflect.ProtoMessage) error {
+
+	svcInfo := c.svcRegistry.Get(payload)
+	if svcInfo == nil {
+		return fmt.Errorf("no service info for proto type '%s'", payload.ProtoReflect().Descriptor().FullName()) // TODO: introduce a proper error type
+	}
+
+	requestHeader := &ybApi.RequestHeader{
+		CallId:        utils.PInt32(int32(c.callID())),
+		RemoteMethod:  svcInfo.ToRemoteMethodPB(),
+		TimeoutMillis: utils.PUint32(c.originalConfig.OpTimeout),
+	}
+
 	b := bytes.NewBuffer([]byte{})
-	if err := utils.WriteMessages(b, header, payload); err != nil {
+	if err := utils.WriteMessages(b, requestHeader, payload); err != nil {
 		return err
 	}
 	if err := c.send(b); err != nil {
