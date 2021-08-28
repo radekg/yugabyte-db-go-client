@@ -71,7 +71,11 @@ func connectTLS(cfg *configs.YBClientConfig, logger hclog.Logger) (YBConnectedCl
 
 // YBConnectedClient represents a connected client.
 type YBConnectedClient interface {
+	// Close closes the connected client.
 	Close() error
+	// Execute executes the payload against the service
+	// and populates the response with the response data.
+	Execute(payload, response protoreflect.ProtoMessage) error
 
 	GetLoadMoveCompletion() (*ybApi.GetLoadMovePercentResponsePB, error)
 	GetMasterRegistration() (*ybApi.GetMasterRegistrationResponsePB, error)
@@ -103,11 +107,17 @@ func (c *ybDefaultConnectedClient) Close() error {
 	return c.closeFunc()
 }
 
+// Execute executes the payload against the service
+// and populates the response with the response data.
+func (c *ybDefaultConnectedClient) Execute(payload, response protoreflect.ProtoMessage) error {
+	return c.executeOp(payload, response)
+}
+
 // GetLoadMoveCompletion gets the completion percentage of tablet load move from blacklisted servers.
 func (c *ybDefaultConnectedClient) GetLoadMoveCompletion() (*ybApi.GetLoadMovePercentResponsePB, error) {
 	payload := &ybApi.GetLoadMovePercentRequestPB{}
 	responsePayload := &ybApi.GetLoadMovePercentResponsePB{}
-	if err := c.executeOp(payload, responsePayload); err != nil {
+	if err := c.Execute(payload, responsePayload); err != nil {
 		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
@@ -120,7 +130,7 @@ func (c *ybDefaultConnectedClient) GetLoadMoveCompletion() (*ybApi.GetLoadMovePe
 func (c *ybDefaultConnectedClient) GetMasterRegistration() (*ybApi.GetMasterRegistrationResponsePB, error) {
 	payload := &ybApi.GetMasterRegistrationRequestPB{}
 	responsePayload := &ybApi.GetMasterRegistrationResponsePB{}
-	if err := c.executeOp(payload, responsePayload); err != nil {
+	if err := c.Execute(payload, responsePayload); err != nil {
 		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
@@ -151,7 +161,7 @@ func (c *ybDefaultConnectedClient) GetTableSchema(opConfig *configs.OpGetTableSc
 		},
 	}
 	responsePayload := &ybApi.GetTableSchemaResponsePB{}
-	if err := c.executeOp(payload, responsePayload); err != nil {
+	if err := c.Execute(payload, responsePayload); err != nil {
 		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
@@ -164,7 +174,7 @@ func (c *ybDefaultConnectedClient) GetTableSchema(opConfig *configs.OpGetTableSc
 func (c *ybDefaultConnectedClient) GetUniverseConfig() (*ybApi.GetMasterClusterConfigResponsePB, error) {
 	payload := &ybApi.GetMasterClusterConfigRequestPB{}
 	responsePayload := &ybApi.GetMasterClusterConfigResponsePB{}
-	if err := c.executeOp(payload, responsePayload); err != nil {
+	if err := c.Execute(payload, responsePayload); err != nil {
 		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
@@ -184,7 +194,7 @@ func (c *ybDefaultConnectedClient) IsLoadBalanced(opConfig *configs.OpIsLoadBala
 		}(),
 	}
 	responsePayload := &ybApi.IsLoadBalancedResponsePB{}
-	if err := c.executeOp(payload, responsePayload); err != nil {
+	if err := c.Execute(payload, responsePayload); err != nil {
 		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
@@ -197,7 +207,7 @@ func (c *ybDefaultConnectedClient) IsLoadBalanced(opConfig *configs.OpIsLoadBala
 func (c *ybDefaultConnectedClient) IsTabletServerReady() (*ybApi.IsTabletServerReadyResponsePB, error) {
 	payload := &ybApi.IsTabletServerReadyRequestPB{}
 	responsePayload := &ybApi.IsTabletServerReadyResponsePB{}
-	if err := c.executeOp(payload, responsePayload); err != nil {
+	if err := c.Execute(payload, responsePayload); err != nil {
 		return nil, err
 	}
 	return responsePayload, nil
@@ -207,7 +217,7 @@ func (c *ybDefaultConnectedClient) IsTabletServerReady() (*ybApi.IsTabletServerR
 func (c *ybDefaultConnectedClient) ListMasters() (*ybApi.ListMastersResponsePB, error) {
 	payload := &ybApi.ListMastersRequestPB{}
 	responsePayload := &ybApi.ListMastersResponsePB{}
-	if err := c.executeOp(payload, responsePayload); err != nil {
+	if err := c.Execute(payload, responsePayload); err != nil {
 		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
@@ -222,7 +232,7 @@ func (c *ybDefaultConnectedClient) ListTabletServers(opConfig *configs.OpListTab
 		PrimaryOnly: utils.PBool(opConfig.PrimaryOnly),
 	}
 	responsePayload := &ybApi.ListTabletServersResponsePB{}
-	if err := c.executeOp(payload, responsePayload); err != nil {
+	if err := c.Execute(payload, responsePayload); err != nil {
 		return nil, err
 	}
 	if err := responsePayload.GetError(); err != nil {
@@ -235,7 +245,7 @@ func (c *ybDefaultConnectedClient) ListTabletServers(opConfig *configs.OpListTab
 func (c *ybDefaultConnectedClient) Ping() (*ybApi.PingResponsePB, error) {
 	payload := &ybApi.PingRequestPB{}
 	responsePayload := &ybApi.PingResponsePB{}
-	if err := c.executeOp(payload, responsePayload); err != nil {
+	if err := c.Execute(payload, responsePayload); err != nil {
 		return nil, err
 	}
 	return responsePayload, nil
