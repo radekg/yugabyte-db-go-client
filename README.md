@@ -51,6 +51,8 @@ func main() {
     case <-connectedClient.OnConnected():
         logger.Debug("client connected")
     }
+    // when not using panics further down, use
+    // defer connectedClient.Close()
 
     // create the request payload:
     payload := &ybApi.ListMastersRequestPB{}
@@ -82,7 +84,10 @@ func main() {
     }
 
     fmt.Println(string(bytes))
-    
+
+    // close the client at the very end
+    connectedClient.Close()
+
 }
 ```
 
