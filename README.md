@@ -2,7 +2,90 @@
 
 Work in progress. Current state: this can definitely work.
 
-## Start YugabyteDB in a container
+## Go client
+
+### Usage
+
+The `github.com/radekg/yugabyte-db-go-client/client/cli` provides a reference client implementation. TL;DR: here's how to use the API client directly from _go_:
+
+```go
+package main
+
+import (
+    "github.com/radekg/yugabyte-db-go-client/client/base"
+    "github.com/radekg/yugabyte-db-go-client/configs"
+    ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
+    
+    "github.com/hashicorp/go-hclog"
+
+    "fmt"
+    "time"
+)
+
+func main() {
+
+    // construct the configuration:
+    cfg := &configs.YBClientConfig{
+        MasterHostPort: "127.0.0.1:7100",
+        OpTimeout:      uint32(5000),
+        // use TLSConfig of type *tls.Config to configure TLS
+    }
+    
+    // create a logger:
+    logger := hclog.Default()
+
+    // create a client:
+    connectedClient, err := base.Connect(cfg, logger)
+	
+    if err != nil {
+		panic(err)
+	}
+
+    // wait for connection status:
+	select {
+	case err := <-connectedClient.OnConnectError():
+		logger.Error("failed connecting a client", "reason", err)
+		panic(err)
+	case <-connectedClient.OnConnected():
+		logger.Debug("client connected")
+	}
+
+    // create the request payload:
+    payload := &ybApi.ListMastersRequestPB{}
+    // create the response payload, it will be populated with the response data
+    // if the request succeeded:
+	responsePayload := &ybApi.ListMastersResponsePB{}
+
+    // execute the request:
+	if err := connectedClient.Execute(payload, responsePayload); err != nil {
+		connectedClient.Close()
+        logger.Error("failed executing the request", "reason", err)
+        panic(err)
+	}
+
+    // some of the payloads provide their own error responses,
+    // handle it like this:
+	if err := responsePayload.GetError(); err != nil {
+        connectedClient.Close()
+        logger.Error("request returned an error", "reason", err)
+		panic(err)
+	}
+
+    // do something with the result:
+    bytes, err := json.MarshalIndent(responsePayload, "", "  ")
+    if err != nil {
+        connectedClient.Close()
+        logger.Error("failed marshalling the response as JSON", "reason", err)
+		panic(err)
+    }
+
+	fmt.Println(string(bytes))
+}
+```
+
+## CLI client
+
+### Start YugabyteDB in a container
 
 ```sh
 docker run \
@@ -20,7 +103,9 @@ docker run \
             --logtostderr --replication_factor=1
 ```
 
-## Run the client
+The goal is to provide a client implementing the functionality of the official YugabyteDB Java client.
+
+### Usage
 
 ```
 go run ./main.go [command] [flags]
@@ -55,28 +140,28 @@ Logging flags:
 - `--log-color`: log colored output, default `false`
 - `--log-force-color`: force colored output, default `false`
 
-#### Command specific flags
+### Command specific flags
 
-##### check-exists
+#### check-exists
 
 - `--keyspace`: string, keyspace name to check in, default `<empty string>`
 - `--name`: string, table name to check for, default `<empty string>`
 - `--uuid`: string, table identified (uuid) to check for, default `<empty string>`
 
-##### is-load-balanced
+#### is-load-balanced
 
 - `--expected-num-servers`: int32, how many servers to include in this check, default `-1` (`undefined`)
 
-##### list-tablet-servers
+#### list-tablet-servers
 
 - `--primary-only`: boolean, list primary tablet servers only, default `false`
 
-##### ping
+#### ping
 
 - `--host`: string, host to ping, default `<empty string>`
 - `--port`: int, port to ping, default `0`, must be higher than `0`
 
-##### is-server-ready
+#### is-server-ready
 
 - `--host`: string, host to check, default `<empty string>`
 - `--port`: int, port to check, default `0`, must be higher than `0`
