@@ -32,56 +32,57 @@ func main() {
         OpTimeout:      uint32(5000),
         // use TLSConfig of type *tls.Config to configure TLS
     }
-    
+
     // create a logger:
     logger := hclog.Default()
 
     // create a client:
     connectedClient, err := base.Connect(cfg, logger)
-	
+
     if err != nil {
-		panic(err)
-	}
+        panic(err)
+    }
 
     // wait for connection status:
-	select {
-	case err := <-connectedClient.OnConnectError():
-		logger.Error("failed connecting a client", "reason", err)
-		panic(err)
-	case <-connectedClient.OnConnected():
-		logger.Debug("client connected")
-	}
+    select {
+    case err := <-connectedClient.OnConnectError():
+        logger.Error("failed connecting a client", "reason", err)
+        panic(err)
+    case <-connectedClient.OnConnected():
+        logger.Debug("client connected")
+    }
 
     // create the request payload:
     payload := &ybApi.ListMastersRequestPB{}
     // create the response payload, it will be populated with the response data
     // if the request succeeded:
-	responsePayload := &ybApi.ListMastersResponsePB{}
+    responsePayload := &ybApi.ListMastersResponsePB{}
 
     // execute the request:
-	if err := connectedClient.Execute(payload, responsePayload); err != nil {
-		connectedClient.Close()
+    if err := connectedClient.Execute(payload, responsePayload); err != nil {
+        connectedClient.Close()
         logger.Error("failed executing the request", "reason", err)
         panic(err)
-	}
+    }
 
     // some of the payloads provide their own error responses,
     // handle it like this:
-	if err := responsePayload.GetError(); err != nil {
+    if err := responsePayload.GetError(); err != nil {
         connectedClient.Close()
         logger.Error("request returned an error", "reason", err)
-		panic(err)
-	}
+        panic(err)
+    }
 
     // do something with the result:
     bytes, err := json.MarshalIndent(responsePayload, "", "  ")
     if err != nil {
         connectedClient.Close()
         logger.Error("failed marshalling the response as JSON", "reason", err)
-		panic(err)
+        panic(err)
     }
 
-	fmt.Println(string(bytes))
+    fmt.Println(string(bytes))
+    
 }
 ```
 
