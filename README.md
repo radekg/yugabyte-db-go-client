@@ -6,7 +6,9 @@ Work in progress. Current state: this can definitely work.
 
 ### Usage
 
-The `github.com/radekg/yugabyte-db-go-client/client/cli` provides a reference client implementation. TL;DR: here's how to use the API client directly from _go_:
+The `github.com/radekg/yugabyte-db-go-client/client/cli` provides a reference client implementation.
+
+**TL;DR**: here's how to use the API client directly from _go_:
 
 ```go
 package main
