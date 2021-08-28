@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/radekg/yugabyte-db-go-client/client"
+	"github.com/radekg/yugabyte-db-go-client/client/cli"
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	"github.com/spf13/cobra"
 )
@@ -47,21 +47,21 @@ func processCommand() int {
 		}
 	}
 
-	connectedClient, err := client.Connect(configs.NewYBClientConfigFromCliConfig(commandConfig), logger.Named("client"))
+	cliClient, err := cli.NewYBConnectedClient(configs.NewYBClientConfigFromCliConfig(commandConfig), logger.Named("client"))
 	if err != nil {
 		logger.Error("failed creating a client", "reason", err)
 		return 1
 	}
 	select {
-	case err := <-connectedClient.OnConnectError():
+	case err := <-cliClient.OnConnectError():
 		logger.Error("failed connecting a client", "reason", err)
 		return 1
-	case <-connectedClient.OnConnected():
+	case <-cliClient.OnConnected():
 		logger.Debug("client connected")
 	}
-	defer connectedClient.Close()
+	defer cliClient.Close()
 
-	registration, err := connectedClient.GetMasterRegistration()
+	registration, err := cliClient.GetMasterRegistration()
 	if err != nil {
 		logger.Error("failed reading master registration", "reason", err)
 		return 1

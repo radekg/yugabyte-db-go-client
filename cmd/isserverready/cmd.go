@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/radekg/yugabyte-db-go-client/client"
+	"github.com/radekg/yugabyte-db-go-client/client/cli"
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	"github.com/spf13/cobra"
 )
@@ -52,23 +52,23 @@ func processCommand() int {
 	cfg := configs.NewYBClientConfigFromCliConfig(commandConfig)
 	cfg.MasterHostPort = fmt.Sprintf("%s:%d", opConfig.Host, opConfig.Port)
 	// TODO: REVISIT: what's the is-tserver flag for?
-	connectedClient, err := client.Connect(cfg, logger.Named("client"))
+	cliClient, err := cli.NewYBConnectedClient(cfg, logger.Named("client"))
 	if err != nil {
 		// careful: different than other commands:
 		logger.Error("server not reachable", "reason", err)
 		return 2
 	}
 	select {
-	case err := <-connectedClient.OnConnectError():
+	case err := <-cliClient.OnConnectError():
 		// TODO: LATER: in this case, this may indicate the service unavailability
 		logger.Error("failed connecting a client", "reason", err)
 		return 1
-	case <-connectedClient.OnConnected():
+	case <-cliClient.OnConnected():
 		logger.Debug("client connected")
 	}
-	defer connectedClient.Close()
+	defer cliClient.Close()
 
-	responsePayload, err := connectedClient.Ping()
+	responsePayload, err := cliClient.IsTabletServerReady()
 	if err != nil {
 		// TODO: LATER: in this case, this may indicate the service unavailability
 		logger.Error("failed reading server ready response", "reason", err)
