@@ -1,4 +1,4 @@
-package listmasters
+package leaderstepdown
 
 import (
 	"encoding/json"
@@ -12,8 +12,8 @@ import (
 
 // Command is the command declaration.
 var Command = &cobra.Command{
-	Use:   "list-masters",
-	Short: "List all the masters in this database",
+	Use:   "leader-step-down",
+	Short: "Try to force the current leader to step down",
 	Run:   run,
 	Long:  ``,
 }
@@ -21,11 +21,13 @@ var Command = &cobra.Command{
 var (
 	commandConfig = configs.NewCliConfig()
 	logConfig     = configs.NewLogginConfig()
+	opConfig      = configs.NewOpLeaderStepDownConfig()
 )
 
 func initFlags() {
 	Command.Flags().AddFlagSet(commandConfig.FlagSet())
 	Command.Flags().AddFlagSet(logConfig.FlagSet())
+	Command.Flags().AddFlagSet(opConfig.FlagSet())
 }
 
 func init() {
@@ -38,9 +40,9 @@ func run(cobraCommand *cobra.Command, _ []string) {
 
 func processCommand() int {
 
-	logger := logConfig.NewLogger("list-masters")
+	logger := logConfig.NewLogger("leader-step-down")
 
-	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig} {
+	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig, opConfig} {
 		if err := validatingConfig.Validate(); err != nil {
 			logger.Error("configuration is invalid", "reason", err)
 			return 1
@@ -61,9 +63,9 @@ func processCommand() int {
 	}
 	defer cliClient.Close()
 
-	responsePayload, err := cliClient.ListMasters()
+	responsePayload, err := cliClient.LeaderStepDown(opConfig)
 	if err != nil {
-		logger.Error("failed reading masters list", "reason", err)
+		logger.Error("failed leader step down", "reason", err)
 		return 1
 	}
 

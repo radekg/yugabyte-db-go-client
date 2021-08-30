@@ -128,8 +128,10 @@ where the command is one of:
 - `get-universe-config`: Get the placement info and blacklist info of the universe.
 - `is-load-balanced`: Check if master leader thinks that the load is balanced across TServers.
 - `is-server-ready`: Check if server is ready to serve IO requests.
+- `leader-step-down`: Try to force the current leader to step down, requires `--destination-uuid` and `--tablet-id`.
 - `list-masters`: List all the masters in this database.
 - `list-tablet-servers`: List all the tablet servers in this database.
+- `master-leader-step-down`: Try to force the current master leader to step down.
 - `ping`: Ping a certain YB server.
 
 ### Flags
@@ -157,9 +159,12 @@ Logging flags:
 - `--name`: string, table name to check for, default `<empty string>`
 - `--uuid`: string, table identified (uuid) to check for, default `<empty string>`
 
-#### is-load-balanced
+#### leader-step-down
 
-- `--expected-num-servers`: int32, how many servers to include in this check, default `-1` (`undefined`)
+- `--destination-uuid`: UUID of server this request is addressed to, default `empty` - not specified
+- `--disable-graceful-transition`: `boolean`, if `new-leader-uuid` is not specified, the current leader will attempt to gracefully transfer leadership to another peer; setting this flag disables that behavior, default `false`
+- `--new-leader-uuid`: UUID of the server that should run the election to become the new leader, default `empty` - not specified
+- `--tablet-id`: the id of the tablet, default `empty` - not specified
 
 #### list-tablet-servers
 
@@ -169,6 +174,10 @@ Logging flags:
 
 - `--host`: string, host to ping, default `<empty string>`
 - `--port`: int, port to ping, default `0`, must be higher than `0`
+
+#### is-load-balanced
+
+- `--expected-num-servers`: int32, how many servers to include in this check, default `-1` (`undefined`)
 
 #### is-server-ready
 

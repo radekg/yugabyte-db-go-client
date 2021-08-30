@@ -21,7 +21,7 @@ var Command = &cobra.Command{
 var (
 	commandConfig = configs.NewCliConfig()
 	logConfig     = configs.NewLogginConfig()
-	opConfig      = configs.NewOpIsServerReadyonfig()
+	opConfig      = configs.NewOpIsServerReadyConfig()
 )
 
 func initFlags() {

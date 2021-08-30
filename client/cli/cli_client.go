@@ -16,8 +16,10 @@ type YBCliClient interface {
 	GetUniverseConfig() (*ybApi.GetMasterClusterConfigResponsePB, error)
 	IsLoadBalanced(*configs.OpIsLoadBalancedConfig) (*ybApi.IsLoadBalancedResponsePB, error)
 	IsTabletServerReady() (*ybApi.IsTabletServerReadyResponsePB, error)
+	LeaderStepDown(*configs.OpLeaderStepDownConfig) (*ybApi.LeaderStepDownResponsePB, error)
 	ListMasters() (*ybApi.ListMastersResponsePB, error)
 	ListTabletServers(*configs.OpListTabletServersConfig) (*ybApi.ListTabletServersResponsePB, error)
+	MasterLeaderStepDown() (*ybApi.GetMasterRegistrationResponsePB, error)
 	Ping() (*ybApi.PingResponsePB, error)
 	OnConnected() <-chan struct{}
 	OnConnectError() <-chan error
