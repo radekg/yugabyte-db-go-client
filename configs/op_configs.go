@@ -194,3 +194,45 @@ func (c *OpLeaderStepDownConfig) Validate() error {
 	}
 	return nil
 }
+
+// ==
+
+// OpSetLoadBalancerEnableConfig represents a command specific config.
+type OpSetLoadBalancerEnableConfig struct {
+	flagBase
+
+	EnableTruthy string
+}
+
+// NewOpSetLoadBalancerEnableConfig returns an instance of the command specific config.
+func NewOpSetLoadBalancerEnableConfig() *OpSetLoadBalancerEnableConfig {
+	return &OpSetLoadBalancerEnableConfig{}
+}
+
+// FlagSet returns an instance of the flag set for the configuration.
+func (c *OpSetLoadBalancerEnableConfig) FlagSet() *pflag.FlagSet {
+	if c.initFlagSet() {
+		c.flagSet.StringVar(&c.EnableTruthy, "state", "", "New state: enabled or disabled")
+	}
+	return c.flagSet
+}
+
+// Enabled returns the bool mapping of the state with an ok flag, which is false if the
+// given value wss not an expected one.
+func (c *OpSetLoadBalancerEnableConfig) Enabled() (bool, bool) {
+	if c.EnableTruthy == "enabled" {
+		return true, true
+	}
+	if c.EnableTruthy == "disabled" {
+		return false, true
+	}
+	return false, false
+}
+
+// Validate validates the correctness of the configuration.
+func (c *OpSetLoadBalancerEnableConfig) Validate() error {
+	if c.EnableTruthy != "enabled" && c.EnableTruthy != "disabled" {
+		return fmt.Errorf("--state must be enabled or disabled")
+	}
+	return nil
+}

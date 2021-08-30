@@ -21,6 +21,7 @@ type YBCliClient interface {
 	ListTabletServers(*configs.OpListTabletServersConfig) (*ybApi.ListTabletServersResponsePB, error)
 	MasterLeaderStepDown() (*ybApi.GetMasterRegistrationResponsePB, error)
 	Ping() (*ybApi.PingResponsePB, error)
+	SetLoadBalancerEnable(bool) (*ybApi.ChangeLoadBalancerStateResponsePB, error)
 	OnConnected() <-chan struct{}
 	OnConnectError() <-chan error
 }
