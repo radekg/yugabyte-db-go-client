@@ -12,7 +12,7 @@ import (
 
 // Command is the command declaration.
 var Command = &cobra.Command{
-	Use:   "set-load-balancer-enable",
+	Use:   "set-load-balancer-state",
 	Short: "Set the load balancer state",
 	Run:   run,
 	Long:  ``,
@@ -40,7 +40,7 @@ func run(cobraCommand *cobra.Command, _ []string) {
 
 func processCommand() int {
 
-	logger := logConfig.NewLogger("set-load-balancer-enable")
+	logger := logConfig.NewLogger("set-load-balancer-state")
 
 	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig, opConfig} {
 		if err := validatingConfig.Validate(); err != nil {
@@ -71,7 +71,7 @@ func processCommand() int {
 
 	responsePayload, err := cliClient.SetLoadBalancerState(boolState)
 	if err != nil {
-		logger.Error("failed setting load balancer enable state", "reason", err)
+		logger.Error("failed setting load balancer state", "reason", err)
 		return 1
 	}
 
