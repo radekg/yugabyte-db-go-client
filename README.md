@@ -133,7 +133,7 @@ where the command is one of:
 - `list-tablet-servers`: List all the tablet servers in this database.
 - `master-leader-step-down`: Try to force the current master leader to step down.
 - `ping`: Ping a certain YB server.
-- `set-load-balancer-enable`: Set the load balancer state.
+- `set-load-balancer-state`: Set the load balancer state.
 
 ### Flags
 
@@ -186,6 +186,9 @@ Logging flags:
 - `--port`: int, port to check, default `0`, must be higher than `0`
 - `--is-tserver`: boolean, when `true` - indicated a TServer, default `false`
 
-#### set-load-balancer-enable
+#### set-load-balancer-state
 
-- `--state`: string, no default, one of the two values: `enabled` or `disabled`
+Options are mutually exclusive, exactly one has to be set:
+
+- `--enabled`: boolean, default `false`, new desired state: enabled
+- `--disabled`: boolean, default `false`, new desired state: disabled

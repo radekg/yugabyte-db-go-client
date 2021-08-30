@@ -1,4 +1,4 @@
-package setloadbalancerenable
+package setloadbalancerstate
 
 import (
 	"encoding/json"
@@ -49,7 +49,7 @@ func processCommand() int {
 		}
 	}
 
-	boolState, ok := opConfig.Enabled()
+	boolState, ok := opConfig.IsEnabled()
 	if !ok {
 		logger.Error("configuration --state value is invalid")
 		return 1
@@ -69,7 +69,7 @@ func processCommand() int {
 	}
 	defer cliClient.Close()
 
-	responsePayload, err := cliClient.SetLoadBalancerEnable(boolState)
+	responsePayload, err := cliClient.SetLoadBalancerState(boolState)
 	if err != nil {
 		logger.Error("failed setting load balancer enable state", "reason", err)
 		return 1

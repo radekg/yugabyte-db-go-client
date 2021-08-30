@@ -6,7 +6,7 @@ import (
 )
 
 // Ping pings a certain YB server.
-func (c *defaultYBCliClient) SetLoadBalancerEnable(enable bool) (*ybApi.ChangeLoadBalancerStateResponsePB, error) {
+func (c *defaultYBCliClient) SetLoadBalancerState(enable bool) (*ybApi.ChangeLoadBalancerStateResponsePB, error) {
 	payload := &ybApi.ChangeLoadBalancerStateRequestPB{
 		IsEnabled: utils.PBool(enable),
 	}

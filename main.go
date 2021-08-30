@@ -15,7 +15,7 @@ import (
 	"github.com/radekg/yugabyte-db-go-client/cmd/listtabletservers"
 	"github.com/radekg/yugabyte-db-go-client/cmd/masterleaderstepdown"
 	"github.com/radekg/yugabyte-db-go-client/cmd/ping"
-	"github.com/radekg/yugabyte-db-go-client/cmd/setloadbalancerenable"
+	"github.com/radekg/yugabyte-db-go-client/cmd/setloadbalancerstate"
 	"github.com/spf13/cobra"
 )
 
@@ -41,7 +41,7 @@ func init() {
 	rootCmd.AddCommand(listtabletservers.Command)
 	rootCmd.AddCommand(masterleaderstepdown.Command)
 	rootCmd.AddCommand(ping.Command)
-	rootCmd.AddCommand(setloadbalancerenable.Command)
+	rootCmd.AddCommand(setloadbalancerstate.Command)
 }
 
 func main() {

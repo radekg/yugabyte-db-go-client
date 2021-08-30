@@ -201,7 +201,8 @@ func (c *OpLeaderStepDownConfig) Validate() error {
 type OpSetLoadBalancerEnableConfig struct {
 	flagBase
 
-	EnableTruthy string
+	Enabled  bool
+	Disabled bool
 }
 
 // NewOpSetLoadBalancerEnableConfig returns an instance of the command specific config.
@@ -212,18 +213,19 @@ func NewOpSetLoadBalancerEnableConfig() *OpSetLoadBalancerEnableConfig {
 // FlagSet returns an instance of the flag set for the configuration.
 func (c *OpSetLoadBalancerEnableConfig) FlagSet() *pflag.FlagSet {
 	if c.initFlagSet() {
-		c.flagSet.StringVar(&c.EnableTruthy, "state", "", "New state: enabled or disabled")
+		c.flagSet.BoolVar(&c.Enabled, "enabled", false, "Desired state: enabled")
+		c.flagSet.BoolVar(&c.Disabled, "disabled", false, "Desired state: disabled")
 	}
 	return c.flagSet
 }
 
-// Enabled returns the bool mapping of the state with an ok flag, which is false if the
+// IsEnabled returns the bool mapping of the state with an ok flag, which is false if the
 // given value wss not an expected one.
-func (c *OpSetLoadBalancerEnableConfig) Enabled() (bool, bool) {
-	if c.EnableTruthy == "enabled" {
+func (c *OpSetLoadBalancerEnableConfig) IsEnabled() (bool, bool) {
+	if c.Enabled {
 		return true, true
 	}
-	if c.EnableTruthy == "disabled" {
+	if c.Disabled {
 		return false, true
 	}
 	return false, false
@@ -231,8 +233,11 @@ func (c *OpSetLoadBalancerEnableConfig) Enabled() (bool, bool) {
 
 // Validate validates the correctness of the configuration.
 func (c *OpSetLoadBalancerEnableConfig) Validate() error {
-	if c.EnableTruthy != "enabled" && c.EnableTruthy != "disabled" {
-		return fmt.Errorf("--state must be enabled or disabled")
+	if !c.Enabled && !c.Disabled {
+		return fmt.Errorf("--enabled or --disabled required")
+	}
+	if c.Enabled && c.Disabled {
+		return fmt.Errorf("--enabled and --disabled: choose one")
 	}
 	return nil
 }
