@@ -133,6 +133,7 @@ where the command is one of:
 - `list-tablet-servers`: List all the tablet servers in this database.
 - `master-leader-step-down`: Try to force the current master leader to step down.
 - `ping`: Ping a certain YB server.
+- `set-load-balancer-enable`: Set the load balancer state.
 
 ### Flags
 
@@ -162,7 +163,7 @@ Logging flags:
 #### leader-step-down
 
 - `--destination-uuid`: UUID of server this request is addressed to, default `empty` - not specified
-- `--disable-graceful-transition`: `boolean`, if `new-leader-uuid` is not specified, the current leader will attempt to gracefully transfer leadership to another peer; setting this flag disables that behavior, default `false`
+- `--disable-graceful-transition`: boolean, if `new-leader-uuid` is not specified, the current leader will attempt to gracefully transfer leadership to another peer; setting this flag disables that behavior, default `false`
 - `--new-leader-uuid`: UUID of the server that should run the election to become the new leader, default `empty` - not specified
 - `--tablet-id`: the id of the tablet, default `empty` - not specified
 
@@ -184,3 +185,7 @@ Logging flags:
 - `--host`: string, host to check, default `<empty string>`
 - `--port`: int, port to check, default `0`, must be higher than `0`
 - `--is-tserver`: boolean, when `true` - indicated a TServer, default `false`
+
+#### set-load-balancer-enable
+
+- `--state`: string, no default, one of the two values: `enabled` or `disabled`
