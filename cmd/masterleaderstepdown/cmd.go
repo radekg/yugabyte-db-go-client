@@ -1,4 +1,4 @@
-package listmasters
+package masterleaderstepdown
 
 import (
 	"encoding/json"
@@ -12,8 +12,8 @@ import (
 
 // Command is the command declaration.
 var Command = &cobra.Command{
-	Use:   "list-masters",
-	Short: "List all the masters in this database",
+	Use:   "master-leader-step-down",
+	Short: "Try to force the current master leader to step down",
 	Run:   run,
 	Long:  ``,
 }
@@ -38,7 +38,7 @@ func run(cobraCommand *cobra.Command, _ []string) {
 
 func processCommand() int {
 
-	logger := logConfig.NewLogger("list-masters")
+	logger := logConfig.NewLogger("master-leader-step-down")
 
 	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig} {
 		if err := validatingConfig.Validate(); err != nil {
@@ -61,9 +61,9 @@ func processCommand() int {
 	}
 	defer cliClient.Close()
 
-	responsePayload, err := cliClient.ListMasters()
+	responsePayload, err := cliClient.MasterLeaderStepDown()
 	if err != nil {
-		logger.Error("failed reading masters list", "reason", err)
+		logger.Error("failed master leader step down", "reason", err)
 		return 1
 	}
 

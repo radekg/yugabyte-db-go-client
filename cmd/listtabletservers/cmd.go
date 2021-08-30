@@ -40,7 +40,7 @@ func run(cobraCommand *cobra.Command, _ []string) {
 
 func processCommand() int {
 
-	logger := logConfig.NewLogger("get_master_registration")
+	logger := logConfig.NewLogger("list-tablet-servers")
 
 	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig} {
 		if err := validatingConfig.Validate(); err != nil {

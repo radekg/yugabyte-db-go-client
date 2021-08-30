@@ -121,6 +121,9 @@ func PUint32(a uint32) *uint32 {
 
 // PString returns a pointer to a string.
 func PString(a string) *string {
+	if a == "" {
+		return nil
+	}
 	return &a
 }
 
