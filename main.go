@@ -12,6 +12,7 @@ import (
 	"github.com/radekg/yugabyte-db-go-client/cmd/isserverready"
 	"github.com/radekg/yugabyte-db-go-client/cmd/leaderstepdown"
 	"github.com/radekg/yugabyte-db-go-client/cmd/listmasters"
+	"github.com/radekg/yugabyte-db-go-client/cmd/listtables"
 	"github.com/radekg/yugabyte-db-go-client/cmd/listtabletservers"
 	"github.com/radekg/yugabyte-db-go-client/cmd/masterleaderstepdown"
 	"github.com/radekg/yugabyte-db-go-client/cmd/ping"
@@ -38,6 +39,7 @@ func init() {
 	rootCmd.AddCommand(isserverready.Command)
 	rootCmd.AddCommand(leaderstepdown.Command)
 	rootCmd.AddCommand(listmasters.Command)
+	rootCmd.AddCommand(listtables.Command)
 	rootCmd.AddCommand(listtabletservers.Command)
 	rootCmd.AddCommand(masterleaderstepdown.Command)
 	rootCmd.AddCommand(ping.Command)

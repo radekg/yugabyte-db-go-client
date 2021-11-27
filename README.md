@@ -130,6 +130,7 @@ where the command is one of:
 - `is-server-ready`: Check if server is ready to serve IO requests.
 - `leader-step-down`: Try to force the current leader to step down, requires `--destination-uuid` and `--tablet-id`.
 - `list-masters`: List all the masters in this database.
+- `list-tables`: List all tables in this database.
 - `list-tablet-servers`: List all the tablet servers in this database.
 - `master-leader-step-down`: Try to force the current master leader to step down.
 - `ping`: Ping a certain YB server.
@@ -166,6 +167,24 @@ Logging flags:
 - `--disable-graceful-transition`: boolean, if `new-leader-uuid` is not specified, the current leader will attempt to gracefully transfer leadership to another peer; setting this flag disables that behavior, default `false`
 - `--new-leader-uuid`: UUID of the server that should run the election to become the new leader, default `empty` - not specified
 - `--tablet-id`: the id of the tablet, default `empty` - not specified
+
+#### list-tables
+
+- `--name-filter`: string, When used, only returns tables that satisfy a substring match on `name_filter`, default `empty string`
+- `--namespace-name`: string, the namespace name to fetch info, default `empty string`
+- `--namespace-type`: string, database type - one of `cql`, `pgsql`, `redis`, default `cql`
+- `--exclude-system-tables`: boolean, exclude system tables, default `false`
+- `--include-not-running`: boolean, include not running, default `false`
+- `--relation-type`: list of strings, filter tables based on RelationType - supported values: `system_table`, `user_table`, `index`, default: all values
+
+Examples:
+
+- list all regardless of namespace type: `cli list-tables`
+- list all PostgreSQL `system_platform` relations: `cli list-tables --namespace-name system_platform --namespace-type pgsql`
+- list all PostgreSQL `postgres` relations: `cli list-tables --namespace-name postgres --namespace-type pgsql`
+- list all PostgreSQL `template0` relations: `cli list-tables --namespace-name template0 --namespace-type pgsql`
+- list all CQL `system_schema` relations: `cli list-tables --namespace-name system_schema --namespace-type cql`
+- list all Redis `system_redis` relations: `cli list-tables --namespace-name system_redis --namespace-type redis`
 
 #### list-tablet-servers
 

@@ -18,6 +18,7 @@ type YBCliClient interface {
 	IsTabletServerReady() (*ybApi.IsTabletServerReadyResponsePB, error)
 	LeaderStepDown(*configs.OpLeaderStepDownConfig) (*ybApi.LeaderStepDownResponsePB, error)
 	ListMasters() (*ybApi.ListMastersResponsePB, error)
+	ListTables(*configs.OpListTablesConfig) (*ybApi.ListTablesResponsePB, error)
 	ListTabletServers(*configs.OpListTabletServersConfig) (*ybApi.ListTabletServersResponsePB, error)
 	MasterLeaderStepDown() (*ybApi.GetMasterRegistrationResponsePB, error)
 	Ping() (*ybApi.PingResponsePB, error)
