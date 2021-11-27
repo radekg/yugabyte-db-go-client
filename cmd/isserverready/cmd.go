@@ -49,10 +49,14 @@ func processCommand() int {
 		}
 	}
 
-	cfg := configs.NewYBClientConfigFromCliConfig(commandConfig)
-	cfg.MasterHostPort = fmt.Sprintf("%s:%d", opConfig.Host, opConfig.Port)
+	cliConfig, cliConfigErr := configs.NewYBClientConfigFromCliConfig(commandConfig)
+	if cliConfigErr != nil {
+		logger.Error("failed creating client configuration", "reason", cliConfigErr)
+		return 1
+	}
+	cliConfig.MasterHostPort = fmt.Sprintf("%s:%d", opConfig.Host, opConfig.Port)
 	// TODO: REVISIT: what's the is-tserver flag for?
-	cliClient, err := cli.NewYBConnectedClient(cfg, logger.Named("client"))
+	cliClient, err := cli.NewYBConnectedClient(cliConfig, logger.Named("client"))
 	if err != nil {
 		// careful: different than other commands:
 		logger.Error("server not reachable", "reason", err)

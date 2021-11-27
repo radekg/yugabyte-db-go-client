@@ -55,7 +55,12 @@ func processCommand() int {
 		return 1
 	}
 
-	cliClient, err := cli.NewYBConnectedClient(configs.NewYBClientConfigFromCliConfig(commandConfig), logger.Named("client"))
+	cliConfig, cliConfigErr := configs.NewYBClientConfigFromCliConfig(commandConfig)
+	if cliConfigErr != nil {
+		logger.Error("failed creating client configuration", "reason", cliConfigErr)
+		return 1
+	}
+	cliClient, err := cli.NewYBConnectedClient(cliConfig, logger.Named("client"))
 	if err != nil {
 		logger.Error("failed creating a client", "reason", err)
 		return 1
