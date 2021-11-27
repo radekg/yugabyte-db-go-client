@@ -2,56 +2,44 @@ package utils
 
 import (
 	"encoding/binary"
+	"errors"
 	"io"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-// ReadVarintMaxBufferSize is the maximum varint buffer size.
-const ReadVarintMaxBufferSize = 9
+var errOverflow32 = errors.New("binary: varint overflows a 64-bit integer")
 
-// ReadVarintByteOrder byte order for varint reader.
-var ReadVarintByteOrder = binary.LittleEndian
-
-// ReadVarint reads a varint from a reader.
-func ReadVarint(r io.Reader) (uint64, int, error) {
-	var bufarray [ReadVarintMaxBufferSize]byte
-	buf := bufarray[:]
-	var value uint64
-	i := 0
-	i, err := io.ReadFull(r, buf[0:1])
-	if err != nil {
-		return 0, i, err
+// ReadUvarint32 reads an encoded unsigned 32-bit integer from r and returns it as a uint64.
+func ReadUvarint32(r io.ByteReader) (uint64, error) {
+	var x uint64
+	var s uint
+	for i := 0; i < binary.MaxVarintLen32; i++ {
+		b, err := r.ReadByte()
+		if err != nil {
+			return x, err
+		}
+		if b < 0x80 {
+			if i == binary.MaxVarintLen32-1 && b > 1 {
+				return x, errOverflow32
+			}
+			return x | uint64(b)<<s, nil
+		}
+		x |= uint64(b&0x7f) << s
+		s += 7
 	}
-	switch buf[0] {
-	default:
-		value = uint64(buf[0])
-		i = 1
-	case 0xfd:
-		_, err := io.ReadFull(r, buf[0:2])
-		if err != nil {
-			return 0, i, err
-		}
+	return x, errOverflow32
+}
 
-		value = uint64(ReadVarintByteOrder.Uint16(buf))
-		i = 3
-	case 0xfe:
-		_, err := io.ReadFull(r, buf[0:4])
-		if err != nil {
-			return 0, i, err
-		}
-		value = uint64(ReadVarintByteOrder.Uint32(buf))
-		i = 5
-	case 0xff:
-		_, err := io.ReadFull(r, buf[0:8])
-		if err != nil {
-			return 0, i, err
-		}
-		value = ReadVarintByteOrder.Uint64(buf)
-		i = 9
+// ReadVarint32 reads an encoded signed integer from r and returns it as an int64.
+func ReadVarint32(r io.ByteReader) (int64, error) {
+	ux, err := ReadUvarint32(r) // ok to continue in presence of error
+	x := int64(ux >> 1)
+	if ux&1 != 0 {
+		x = ^x
 	}
-	return value, i, nil
+	return x, err
 }
 
 // WriteMessages writes a variable number of protobuf messages into a given writer.

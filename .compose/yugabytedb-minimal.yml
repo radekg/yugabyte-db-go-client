@@ -1,0 +1,50 @@
+version: '3.9'
+
+networks:
+  yb-client-minimal:
+    name: yb-client-minimal
+
+services:
+
+  yb-master:
+    image: ${YB_IMAGE}
+    container_name: yb-master
+    networks:
+      - yb-client-minimal
+    ports:
+      - 7000:7000
+      - 7100:7100
+    command: [ "/home/${YB_USER}/bin/yb-master",
+      "--callhome_enabled=false",
+      "--fs_data_dirs=${YB_MOUNT_PREFIX}/master",
+      "--master_addresses=yb-master:7100",
+      "--rpc_bind_addresses=yb-master:7100",
+      "--logtostderr",
+      "--minloglevel=1",
+      "--placement_cloud=docker",
+      "--stop_on_parent_termination",
+      "--undefok=stop_on_parent_termination",
+      "--replication_factor=1" ]
+
+  yb-tserver:
+    image: ${YB_IMAGE}
+    container_name: yb-tserver
+    networks:
+      - yb-client-minimal
+    ports:
+      - 5433:5433
+      - 9000:9000
+      - 9100:9100
+    command: [ "/home/${YB_USER}/bin/yb-tserver",
+      "--callhome_enabled=false",
+      "--fs_data_dirs=${YB_MOUNT_PREFIX}/tserver",
+      "--enable_ysql",
+      "--ysql_enable_auth",
+      "--logtostderr",
+      "--rpc_bind_addresses=yb-tserver:9100",
+      "--tserver_master_addrs=yb-master:7100",
+      "--placement_cloud=docker",
+      "--placement_region=yb",
+      "--placement_zone=client1",
+      "--stop_on_parent_termination",
+      "--undefok=stop_on_parent_termination" ]

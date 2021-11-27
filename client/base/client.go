@@ -3,6 +3,7 @@ package base
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/binary"
 	"fmt"
 	"net"
 
@@ -188,16 +189,16 @@ func (c *ybDefaultConnectedClient) readResponseInto(reader *bytes.Buffer, m prot
 
 	// Read the complete data length:
 	// https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/CallResponse.java#L71
-	dataLength, err := utils.ReadInt(reader)
-	if err != nil {
-		opLogger.Error("failed reading data length", "reason", err)
+	var dataLength int32
+	if err := binary.Read(reader, binary.BigEndian, &dataLength); err != nil {
+		opLogger.Error("===============> failed reading response header length", "reason", err)
 		return err
 	}
 
 	opLogger.Trace("data-length", "value", dataLength)
 
 	// https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/CallResponse.java#L76
-	responseHeaderLength, _, err := utils.ReadVarint(reader)
+	responseHeaderLength, err := utils.ReadUvarint32(reader)
 	if err != nil {
 		opLogger.Error("failed reading response header length", "reason", err)
 		return err
@@ -240,7 +241,7 @@ func (c *ybDefaultConnectedClient) readResponseInto(reader *bytes.Buffer, m prot
 	// https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/CallResponse.java#L113
 	// The encoding/binary.ReadUvarint and encoding/binary.ReadVarint doesn't do what it supposed to do
 	// hence the custom code here.
-	responsePayloadLength, _, err := utils.ReadVarint(reader)
+	responsePayloadLength, err := utils.ReadUvarint32(reader)
 	if err != nil {
 		opLogger.Error("failed reading response payload length", "reason", err)
 		return err
