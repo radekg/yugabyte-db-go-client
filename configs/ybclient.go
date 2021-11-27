@@ -12,10 +12,14 @@ type YBClientConfig struct {
 }
 
 // NewYBClientConfigFromCliConfig constructs YB client config from the cli config.
-func NewYBClientConfigFromCliConfig(input *CliConfig) *YBClientConfig {
+func NewYBClientConfigFromCliConfig(input *CliConfig) (*YBClientConfig, error) {
+	tlsConfig, err := input.TLSConfig()
+	if err != nil {
+		return nil, err
+	}
 	return &YBClientConfig{
 		MasterHostPort: input.MasterHostPort,
-		TLSConfig:      input.TLSConfig(),
+		TLSConfig:      tlsConfig,
 		OpTimeout:      uint32(input.OpTimeout.Milliseconds()),
-	}
+	}, nil
 }
