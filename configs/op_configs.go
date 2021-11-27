@@ -2,6 +2,7 @@ package configs
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/pflag"
 )
@@ -37,6 +38,72 @@ func (c *OpGetTableSchemaConfig) Validate() error {
 	}
 	if c.Name == "" && c.UUID == "" {
 		return fmt.Errorf("--name or --uuid is required")
+	}
+	return nil
+}
+
+// ==
+
+var (
+	supportedNamespaceType = []string{"cql", "pgsql", "redis"}
+	supportedRelationType  = []string{"system_table", "user_table", "index"}
+)
+
+// OpListTablesConfig represents a command specific config.
+type OpListTablesConfig struct {
+	flagBase
+
+	NameFilter          string
+	NamespaceName       string
+	NamespaceType       string
+	ExcludeSystemTables bool
+	IncludeNotRunning   bool
+	RelationType        []string
+}
+
+// NewOpListTablesConfig returns an instance of the command specific config.
+func NewOpListTablesConfig() *OpListTablesConfig {
+	return &OpListTablesConfig{}
+}
+
+// FlagSet returns an instance of the flag set for the configuration.
+func (c *OpListTablesConfig) FlagSet() *pflag.FlagSet {
+	if c.initFlagSet() {
+		c.flagSet.StringVar(&c.NameFilter, "name-filter", "", "When used, only returns tables that satisfy a substring match on name_filter")
+		c.flagSet.StringVar(&c.NamespaceName, "namespace-name", "", "The namespace name to fetch info")
+		c.flagSet.StringVar(&c.NamespaceType, "namespace-type", "", fmt.Sprintf("Database type: %s", strings.Join(supportedNamespaceType, ", ")))
+		c.flagSet.BoolVar(&c.ExcludeSystemTables, "exclude-system-tables", false, "Exclude system tables")
+		c.flagSet.BoolVar(&c.IncludeNotRunning, "include-not-running", false, "Include not running")
+		c.flagSet.StringSliceVar(&c.RelationType, "relation-type", supportedRelationType, fmt.Sprintf("Filter tables based on RelationType: %s", strings.Join(supportedRelationType, ", ")))
+	}
+	return c.flagSet
+}
+
+// Validate validates the correctness of the configuration.
+func (c *OpListTablesConfig) Validate() error {
+	if c.NamespaceType != "" {
+		var found bool
+		for _, opt := range supportedNamespaceType {
+			if opt == c.NamespaceType {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("unsupported value '%s' for --namespace-type", c.NamespaceType)
+		}
+	}
+	for _, relation := range c.RelationType {
+		var found bool
+		for _, opt := range supportedRelationType {
+			if opt == relation {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("unsupported value '%s' for --relation-type", relation)
+		}
 	}
 	return nil
 }
