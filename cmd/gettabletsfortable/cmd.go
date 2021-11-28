@@ -1,4 +1,4 @@
-package describetable
+package gettabletsfortable
 
 import (
 	"encoding/json"
@@ -12,8 +12,8 @@ import (
 
 // Command is the command declaration.
 var Command = &cobra.Command{
-	Use:   "describe-table",
-	Short: "Info on a table in this database",
+	Use:   "get-tablets-for-table",
+	Short: "Get table locations",
 	Run:   run,
 	Long:  ``,
 }
@@ -21,7 +21,7 @@ var Command = &cobra.Command{
 var (
 	commandConfig = configs.NewCliConfig()
 	logConfig     = configs.NewLogginConfig()
-	opConfig      = configs.NewOpGetTableSchemaConfig()
+	opConfig      = configs.NewOpGetTableLocationsConfig()
 )
 
 func initFlags() {
@@ -40,7 +40,7 @@ func run(cobraCommand *cobra.Command, _ []string) {
 
 func processCommand() int {
 
-	logger := logConfig.NewLogger("describe-table")
+	logger := logConfig.NewLogger("get-tablets-for-table")
 
 	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig, opConfig} {
 		if err := validatingConfig.Validate(); err != nil {
@@ -68,11 +68,11 @@ func processCommand() int {
 	}
 	defer cliClient.Close()
 
-	responsePayload, err := cliClient.DescribeTable(opConfig)
+	responsePayload, err := cliClient.GetTabletsForTable(opConfig)
 	if err != nil {
 		// if not found, handle an error:
 		// code:OBJECT_NOT_FOUND status:{code:NOT_FOUND message:"Table with identifier  not found: OBJECT_NOT_FOUND" source_file:"../../src/yb/master/catalog_manager.cc" source_line:3803 errors:"\t\x03\x00\x00\x00\x00"}
-		logger.Error("failed reading describe table response", "reason", err)
+		logger.Error("failed reading response", "reason", err)
 		return 1
 	}
 

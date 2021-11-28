@@ -164,19 +164,18 @@ Examples:
 
 - `--name-filter`: string, When used, only returns tables that satisfy a substring match on `name_filter`, default `empty string`
 - `--keyspace`: string, the namespace name to fetch info, default `empty string`
-- `--namespace-type`: string, database type - one of `cql`, `pgsql`, `redis`, default `cql`
 - `--exclude-system-tables`: boolean, exclude system tables, default `false`
 - `--include-not-running`: boolean, include not running, default `false`
 - `--relation-type`: list of strings, filter tables based on RelationType - supported values: `system_table`, `user_table`, `index`, default: all values
 
 Examples:
 
-- list all regardless of namespace type: `cli list-tables`
-- list all PostgreSQL `system_platform` relations: `cli list-tables --keyspace system_platform --namespace-type pgsql`
-- list all PostgreSQL `postgres` relations: `cli list-tables --keyspace postgres --namespace-type pgsql`
-- list all PostgreSQL `template0` relations: `cli list-tables --keyspace template0 --namespace-type pgsql`
-- list all CQL `system_schema` relations: `cli list-tables --keyspace system_schema --namespace-type cql`
-- list all Redis `system_redis` relations: `cli list-tables --keyspace system_redis --namespace-type redis`
+- list all PostgreSQL `system_platform` relations: `cli list-tables --keyspace ysql.system_platform`
+- list all PostgreSQL `postgres` relations: `cli list-tables --keyspace ysql.postgres`
+- list all PostgreSQL `yugabyte` relations: `cli list-tables --keyspace ysql.yugabyte`
+- list all PostgreSQL `template0` relations: `cli list-tables --keyspace ysql.template0`
+- list all CQL `system_schema` relations: `cli list-tables --keyspace ycql.system_schema`
+- list all Redis `system_redis` relations: `cli list-tables --keyspace yedis.system_redis`
 
 #### list-tablet-servers
 

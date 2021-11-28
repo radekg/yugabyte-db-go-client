@@ -15,6 +15,7 @@ type YBCliClient interface {
 	DescribeTable(*configs.OpGetTableSchemaConfig) (*ybApi.GetTableSchemaResponsePB, error)
 	GetLoadMoveCompletion() (*ybApi.GetLoadMovePercentResponsePB, error)
 	GetMasterRegistration() (*ybApi.GetMasterRegistrationResponsePB, error)
+	GetTabletsForTable(*configs.OpGetTableLocationsConfig) (*ybApi.GetTableLocationsResponsePB, error)
 	GetUniverseConfig() (*ybApi.GetMasterClusterConfigResponsePB, error)
 	IsLoadBalanced(*configs.OpIsLoadBalancedConfig) (*ybApi.IsLoadBalancedResponsePB, error)
 	IsTabletServerReady() (*ybApi.IsTabletServerReadyResponsePB, error)

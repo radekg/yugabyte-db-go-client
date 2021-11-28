@@ -303,7 +303,7 @@ func (c *ybDefaultConnectedClient) readResponseInto(reader *bytes.Buffer, m prot
 
 	protoErr2 := proto.Unmarshal(responsePayloadBuf, m)
 	if protoErr2 != nil {
-		opLogger.Error("failed unmarshalling response payload", "reason", protoErr2)
+		opLogger.Error("failed unmarshalling response payload", "reason", protoErr2, "consumed-data", string(responsePayloadBuf))
 		return err
 	}
 
