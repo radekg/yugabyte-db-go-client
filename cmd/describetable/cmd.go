@@ -1,4 +1,4 @@
-package checkexists
+package describetable
 
 import (
 	"encoding/json"
@@ -12,8 +12,8 @@ import (
 
 // Command is the command declaration.
 var Command = &cobra.Command{
-	Use:   "check-exists",
-	Short: "Check that a table exists",
+	Use:   "describe-table",
+	Short: "Info on a table in this database",
 	Run:   run,
 	Long:  ``,
 }
@@ -40,7 +40,7 @@ func run(cobraCommand *cobra.Command, _ []string) {
 
 func processCommand() int {
 
-	logger := logConfig.NewLogger("check-exists")
+	logger := logConfig.NewLogger("describe-table")
 
 	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig, opConfig} {
 		if err := validatingConfig.Validate(); err != nil {
@@ -68,7 +68,7 @@ func processCommand() int {
 	}
 	defer cliClient.Close()
 
-	responsePayload, err := cliClient.CheckExists(opConfig)
+	responsePayload, err := cliClient.DescribeTable(opConfig)
 	if err != nil {
 		// if not found, handle an error:
 		// code:OBJECT_NOT_FOUND status:{code:NOT_FOUND message:"Table with identifier  not found: OBJECT_NOT_FOUND" source_file:"../../src/yb/master/catalog_manager.cc" source_line:3803 errors:"\t\x03\x00\x00\x00\x00"}
