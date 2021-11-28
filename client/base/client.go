@@ -191,7 +191,7 @@ func (c *ybDefaultConnectedClient) readResponseInto(reader *bytes.Buffer, m prot
 	// https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/CallResponse.java#L71
 	var dataLength int32
 	if err := binary.Read(reader, binary.BigEndian, &dataLength); err != nil {
-		opLogger.Error("===============> failed reading response header length", "reason", err)
+		opLogger.Error("failed reading response header length", "reason", err)
 		return err
 	}
 
@@ -220,6 +220,8 @@ func (c *ybDefaultConnectedClient) readResponseInto(reader *bytes.Buffer, m prot
 		"read-header-length", n)
 
 	if uint64(n) != responseHeaderLength {
+		opLogger.Trace("response header read bytes count != expected count",
+			"read-data", string(responseHeaderBuf))
 		opLogger.Error("response header read bytes count != expected count",
 			"expected-header-length", responseHeaderLength,
 			"read-header-length", n)
@@ -267,16 +269,41 @@ func (c *ybDefaultConnectedClient) readResponseInto(reader *bytes.Buffer, m prot
 		"expected-payload-length", responsePayloadLength,
 		"read-payload-length", n)
 
-	if uint64(n) != responsePayloadLength {
-		opLogger.Error("response payload read bytes count != expected count",
+	if uint64(n) < responsePayloadLength {
+		opLogger.Trace("not all data consumed yet, receiving remainder...",
 			"expected-payload-length", responsePayloadLength,
-			"read-payload-length", n)
-		return fmt.Errorf("expected to read %d but read %d", responsePayloadLength, n)
+			"consumed-payload-length", n)
+		for {
+			buf, err := c.recv()
+			if err != nil {
+				opLogger.Error("response payload read bytes count != expected count",
+					"expected-payload-length", responsePayloadLength,
+					"read-payload-length", n)
+				return fmt.Errorf("expected to read %d but read %d", responsePayloadLength, n)
+			}
+
+			n = n + buf.Len()
+			responsePayloadBuf = append(responsePayloadBuf, buf.Bytes()...)
+
+			if uint64(n) == responsePayloadLength {
+				opLogger.Trace("consumed all expected data",
+					"expected-payload-length", responsePayloadLength,
+					"consumed-payload-length", n)
+				break
+			}
+
+			if uint64(n) > responsePayloadLength {
+				opLogger.Error("consumed too much data",
+					"expected-payload-length", responsePayloadLength,
+					"consumed-payload-length", n)
+				return fmt.Errorf("consumed too much data, expected %d but read %d", responsePayloadLength, n)
+			}
+		}
 	}
 
 	protoErr2 := proto.Unmarshal(responsePayloadBuf, m)
 	if protoErr2 != nil {
-		opLogger.Error("failed unmarshalling response payload", "reason", err)
+		opLogger.Error("failed unmarshalling response payload", "reason", protoErr2)
 		return err
 	}
 

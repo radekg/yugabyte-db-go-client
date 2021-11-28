@@ -18,7 +18,7 @@ func (c *defaultYBCliClient) ListTables(opConfig *configs.OpListTablesConfig) (*
 	}
 	if opConfig.NamespaceName != "" || opConfig.NamespaceType != "" {
 		payload.Namespace = &ybApi.NamespaceIdentifierPB{
-			//DatabaseType: pYQLDatabase(ybApi.YQLDatabase(ybApi.YQLDatabase_YQL_DATABASE_UNKNOWN)),
+			DatabaseType: pYQLDatabase(ybApi.YQLDatabase(ybApi.YQLDatabase_YQL_DATABASE_UNKNOWN)),
 		}
 		if opConfig.NamespaceName != "" {
 			payload.Namespace.Name = &opConfig.NamespaceName
@@ -28,15 +28,15 @@ func (c *defaultYBCliClient) ListTables(opConfig *configs.OpListTablesConfig) (*
 				payload.Namespace.DatabaseType = pYQLDatabase(ybApi.YQLDatabase(yqlDatabaseType))
 			}
 		}
-	} /*
-		if len(opConfig.RelationType) > 0 {
-			payload.RelationTypeFilter = []ybApi.RelationType{}
-			for _, relation := range opConfig.RelationType {
-				if relationType, ok := mapRelationTypeFilter(relation); ok {
-					payload.RelationTypeFilter = append(payload.RelationTypeFilter, relationType)
-				}
+	}
+	if len(opConfig.RelationType) > 0 {
+		payload.RelationTypeFilter = []ybApi.RelationType{}
+		for _, relation := range opConfig.RelationType {
+			if relationType, ok := mapRelationTypeFilter(relation); ok {
+				payload.RelationTypeFilter = append(payload.RelationTypeFilter, relationType)
 			}
-		}*/
+		}
+	}
 
 	responsePayload := &ybApi.ListTablesResponsePB{}
 	if err := c.connectedClient.Execute(payload, responsePayload); err != nil {
