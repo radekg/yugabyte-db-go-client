@@ -94,26 +94,6 @@ func main() {
 
 ## CLI client
 
-### Start YugabyteDB in a container
-
-```sh
-docker run \
-    --rm \
-    --hostname localhost \
-    -ti \
-        -p 7000:7000 \
-        -p 7100:7100 \
-        -p 5433:5433 \
-        local/yugabytedb:2.7.2.0 \
-        /home/yugabyte/bin/yb-master \
-            --master_addresses=localhost:7100 \
-            --rpc_bind_addresses=0.0.0.0:7100 \
-            --fs_data_dirs=/tmp \
-            --logtostderr --replication_factor=1
-```
-
-The goal is to provide a client implementing the functionality of the official YugabyteDB Java client.
-
 ### Usage
 
 ```
@@ -123,6 +103,7 @@ go run ./main.go [command] [flags]
 where the command is one of:
 
 - `check-exists`: Check that a table exists.
+- `describe-table`: Info on a table in this database.
 - `get-load-move-completion`: Get the completion percentage of tablet load move from blacklisted servers.
 - `get-master-registration`: Get master registration info.
 - `get-universe-config`: Get the placement info and blacklist info of the universe.
@@ -222,3 +203,21 @@ Options are mutually exclusive, exactly one has to be set:
 
 - `--enabled`: boolean, default `false`, new desired state: enabled
 - `--disabled`: boolean, default `false`, new desired state: disabled
+
+## Minimal YugabyteDB cluster in Docker compose
+
+This repository contains a minimal YugabyteDB Docker compose setup which can be used for client testing or validation.
+
+To start the cluster:
+
+```sh
+cd .compose/
+docker compose -f yugabytedb-minimal.yml up
+```
+
+To restart:
+
+```sh
+docker compose -f yugabytedb-minimal.yml rm
+docker compose -f yugabytedb-minimal.yml up
+```
