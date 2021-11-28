@@ -33,8 +33,8 @@ func (c *OpGetTableSchemaConfig) FlagSet() *pflag.FlagSet {
 
 // Validate validates the correctness of the configuration.
 func (c *OpGetTableSchemaConfig) Validate() error {
-	if c.Keyspace == "" {
-		return fmt.Errorf("--keyspace is required")
+	if c.Name != "" && c.Keyspace == "" {
+		return fmt.Errorf("--keyspace is required when --name is given")
 	}
 	if c.Name == "" && c.UUID == "" {
 		return fmt.Errorf("--name or --uuid is required")
@@ -70,7 +70,7 @@ func NewOpListTablesConfig() *OpListTablesConfig {
 func (c *OpListTablesConfig) FlagSet() *pflag.FlagSet {
 	if c.initFlagSet() {
 		c.flagSet.StringVar(&c.NameFilter, "name-filter", "", "When used, only returns tables that satisfy a substring match on name_filter")
-		c.flagSet.StringVar(&c.NamespaceName, "namespace-name", "", "The namespace name to fetch info")
+		c.flagSet.StringVar(&c.NamespaceName, "keyspace", "", "The namespace name to fetch info")
 		c.flagSet.StringVar(&c.NamespaceType, "namespace-type", "", fmt.Sprintf("Database type: %s", strings.Join(supportedNamespaceType, ", ")))
 		c.flagSet.BoolVar(&c.ExcludeSystemTables, "exclude-system-tables", false, "Exclude system tables")
 		c.flagSet.BoolVar(&c.IncludeNotRunning, "include-not-running", false, "Include not running")

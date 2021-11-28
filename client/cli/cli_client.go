@@ -10,9 +10,11 @@ import (
 // YBCliClient is a client implementing the CLI functionality.
 type YBCliClient interface {
 	Close() error
+
+	CheckExists(*configs.OpGetTableSchemaConfig) (*ybApi.GetTableSchemaResponsePB, error)
+	DescribeTable(*configs.OpGetTableSchemaConfig) (*ybApi.GetTableSchemaResponsePB, error)
 	GetLoadMoveCompletion() (*ybApi.GetLoadMovePercentResponsePB, error)
 	GetMasterRegistration() (*ybApi.GetMasterRegistrationResponsePB, error)
-	GetTableSchema(*configs.OpGetTableSchemaConfig) (*ybApi.GetTableSchemaResponsePB, error)
 	GetUniverseConfig() (*ybApi.GetMasterClusterConfigResponsePB, error)
 	IsLoadBalanced(*configs.OpIsLoadBalancedConfig) (*ybApi.IsLoadBalancedResponsePB, error)
 	IsTabletServerReady() (*ybApi.IsTabletServerReadyResponsePB, error)

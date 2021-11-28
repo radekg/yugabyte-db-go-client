@@ -161,6 +161,17 @@ Logging flags:
 - `--name`: string, table name to check for, default `<empty string>`
 - `--uuid`: string, table identified (uuid) to check for, default `<empty string>`
 
+#### describe-table
+
+- `--keyspace`: string, keyspace name to check in, default `<empty string>`, ignored when using `--uuid`
+- `--name`: string, table name to check for, default `<empty string>`
+- `--uuid`: string, table identified (uuid) to check for, default `<empty string>`
+
+Examples:
+
+- describe table `test` in the `yugabyte` database: `cli describe-table --keyspace yugabyte --name test`
+- describe table with ID `000033c0000030008000000000004000`: `cli describe-table --uuid 000033c0000030008000000000004000`
+
 #### leader-step-down
 
 - `--destination-uuid`: UUID of server this request is addressed to, default `empty` - not specified
@@ -171,7 +182,7 @@ Logging flags:
 #### list-tables
 
 - `--name-filter`: string, When used, only returns tables that satisfy a substring match on `name_filter`, default `empty string`
-- `--namespace-name`: string, the namespace name to fetch info, default `empty string`
+- `--keyspace`: string, the namespace name to fetch info, default `empty string`
 - `--namespace-type`: string, database type - one of `cql`, `pgsql`, `redis`, default `cql`
 - `--exclude-system-tables`: boolean, exclude system tables, default `false`
 - `--include-not-running`: boolean, include not running, default `false`
@@ -180,11 +191,11 @@ Logging flags:
 Examples:
 
 - list all regardless of namespace type: `cli list-tables`
-- list all PostgreSQL `system_platform` relations: `cli list-tables --namespace-name system_platform --namespace-type pgsql`
-- list all PostgreSQL `postgres` relations: `cli list-tables --namespace-name postgres --namespace-type pgsql`
-- list all PostgreSQL `template0` relations: `cli list-tables --namespace-name template0 --namespace-type pgsql`
-- list all CQL `system_schema` relations: `cli list-tables --namespace-name system_schema --namespace-type cql`
-- list all Redis `system_redis` relations: `cli list-tables --namespace-name system_redis --namespace-type redis`
+- list all PostgreSQL `system_platform` relations: `cli list-tables --keyspace system_platform --namespace-type pgsql`
+- list all PostgreSQL `postgres` relations: `cli list-tables --keyspace postgres --namespace-type pgsql`
+- list all PostgreSQL `template0` relations: `cli list-tables --keyspace template0 --namespace-type pgsql`
+- list all CQL `system_schema` relations: `cli list-tables --keyspace system_schema --namespace-type cql`
+- list all Redis `system_redis` relations: `cli list-tables --keyspace system_redis --namespace-type redis`
 
 #### list-tablet-servers
 
