@@ -380,7 +380,37 @@ func (c *OpSnapshotCreateConfig) FlagSet() *pflag.FlagSet {
 // Validate validates the correctness of the configuration.
 func (c *OpSnapshotCreateConfig) Validate() error {
 	if len(c.ScheduleID) > 0 && c.Keyspace == "" {
-		return fmt.Errorf("--keyspace required")
+		return fmt.Errorf("--keyspace is required")
+	}
+	return nil
+}
+
+// ==
+
+// OpSnapshotDeleteConfig represents a command specific config.
+type OpSnapshotDeleteConfig struct {
+	flagBase
+
+	SnapshotID string
+}
+
+// NewOpSnapshotDeleteConfig returns an instance of the command specific config.
+func NewOpSnapshotDeleteConfig() *OpSnapshotDeleteConfig {
+	return &OpSnapshotDeleteConfig{}
+}
+
+// FlagSet returns an instance of the flag set for the configuration.
+func (c *OpSnapshotDeleteConfig) FlagSet() *pflag.FlagSet {
+	if c.initFlagSet() {
+		c.flagSet.StringVar(&c.SnapshotID, "snapshot-id", "", "Snapshot identifier")
+	}
+	return c.flagSet
+}
+
+// Validate validates the correctness of the configuration.
+func (c *OpSnapshotDeleteConfig) Validate() error {
+	if c.SnapshotID == "" {
+		return fmt.Errorf("--snapshot-id is required")
 	}
 	return nil
 }

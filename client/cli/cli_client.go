@@ -28,6 +28,7 @@ type YBCliClient interface {
 	SetLoadBalancerState(bool) (*ybApi.ChangeLoadBalancerStateResponsePB, error)
 
 	SnapshotsCreate(*configs.OpSnapshotCreateConfig) (*ybApi.CreateSnapshotResponsePB, error)
+	SnapshotsDelete(*configs.OpSnapshotDeleteConfig) (*ybApi.DeleteSnapshotResponsePB, error)
 	SnapshotsList(*configs.OpSnapshotListConfig) (*ybApi.ListSnapshotsResponsePB, error)
 
 	OnConnected() <-chan struct{}

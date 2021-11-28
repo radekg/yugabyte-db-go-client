@@ -121,6 +121,7 @@ where the command is one of:
 #### Snapshot commands
 
 - `create-snapshot`: Creates a snapshot of an entire keyspace or selected tables in a keyspace.
+- `delete-snapshot`: Delete snapshot.
 - `list-snapshots`: List snapshots.
 
 ### Flags
@@ -239,9 +240,13 @@ Examples:
 - create a snapshot of selected YSQL tables in the `yugabyte` database: `cli create-snapshot --keyspace ysql.yugabyte --name table --name another-table`
 - create a snapshot of selected YCQL tables in the `example` database: `cli create-snapshot --keyspace ycql.example --name table --add-indexes`
 
+##### delete-snapshot
+
+- `--snapshot-id`: string, snapshot identifier, required, default `empty string` (not defined)
+
 ##### list-snapshots
 
-- `--snapshot-id`: string, Snapshot identifier, default `empty string` (not defined)
+- `--snapshot-id`: string, snapshot identifier, default `empty string` (not defined)
 - `--list-deleted-snapshots`: boolean, list deleted snapshots, default `false`
 - `--prepare-for-backup`: boolean, prepare for backup, default `false`
 
