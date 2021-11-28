@@ -121,6 +121,7 @@ where the command is one of:
 #### Snapshot commands
 
 - `create-snapshot`: Creates a snapshot of an entire keyspace or selected tables in a keyspace.
+- `list-snapshots`: List snapshots.
 
 ### Flags
 
@@ -146,24 +147,6 @@ Logging flags:
 - `--keyspace`: string, keyspace name to check in, default `<empty string>`
 - `--name`: string, table name to check for, default `<empty string>`
 - `--uuid`: string, table identified (uuid) to check for, default `<empty string>`
-
-#### create-snapshot
-
-Multiple `--name` and `--uuid` values can be combined together. To create a snapshot of an entire keyspace, do not specify any `--name` or `--uuid`.
-
-- `--keyspace`: string, keyspace name to create snapshot of, default `<empty string>`
-- `--name`: repeated string, table name to create snapshot of, default `empty list`
-- `--uuid`: repeated string, table ID to create snapshot of, default `empty list`
-- `--transaction-aware`: boolean, transaction aware, default `false`
-- `--add-indexes`: boolean, add indexes, default `false`, YCQL only
-- `--imported`: boolean, interpret this snapshot as imported, default `false`
-- `--schedule-id`: base64 encoded, create snapshot to this schedule, other fields are ignored, default `empty`
-
-Examples:
-
-- create a snapshot of an entire YSQL `yugabyte` database: `cli create-snapshot --keyspace ysql.yugabyte`
-- create a snapshot of selected YSQL tables in the `yugabyte` database: `cli create-snapshot --keyspace ysql.yugabyte --name table --name another-table`
-- create a snapshot of selected YCQL tables in the `example` database: `cli create-snapshot --keyspace ycql.example --name table --add-indexes`
 
 #### describe-table
 
@@ -235,6 +218,32 @@ Options are mutually exclusive, exactly one has to be set:
 
 - `--enabled`: boolean, default `false`, new desired state: enabled
 - `--disabled`: boolean, default `false`, new desired state: disabled
+
+#### Snapshot commands
+
+##### create-snapshot
+
+Multiple `--name` and `--uuid` values can be combined together. To create a snapshot of an entire keyspace, do not specify any `--name` or `--uuid`.
+
+- `--keyspace`: string, keyspace name to create snapshot of, default `<empty string>`
+- `--name`: repeated string, table name to create snapshot of, default `empty list`
+- `--uuid`: repeated string, table ID to create snapshot of, default `empty list`
+- `--transaction-aware`: boolean, transaction aware, default `false`
+- `--add-indexes`: boolean, add indexes, default `false`, YCQL only
+- `--imported`: boolean, interpret this snapshot as imported, default `false`
+- `--schedule-id`: base64 encoded, create snapshot to this schedule, other fields are ignored, default `empty`
+
+Examples:
+
+- create a snapshot of an entire YSQL `yugabyte` database: `cli create-snapshot --keyspace ysql.yugabyte`
+- create a snapshot of selected YSQL tables in the `yugabyte` database: `cli create-snapshot --keyspace ysql.yugabyte --name table --name another-table`
+- create a snapshot of selected YCQL tables in the `example` database: `cli create-snapshot --keyspace ycql.example --name table --add-indexes`
+
+##### list-snapshots
+
+- `--snapshot-id`: string, Snapshot identifier, default `empty string` (not defined)
+- `--list-deleted-snapshots`: boolean, list deleted snapshots, default `false`
+- `--prepare-for-backup`: boolean, prepare for backup, default `false`
 
 ## Minimal YugabyteDB cluster in Docker compose
 

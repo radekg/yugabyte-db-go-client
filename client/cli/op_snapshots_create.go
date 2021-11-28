@@ -5,7 +5,7 @@ import (
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
 
-// Ping pings a certain YB server.
+// Create a snapshot.
 func (c *defaultYBCliClient) SnapshotsCreate(opConfig *configs.OpSnapshotCreateConfig) (*ybApi.CreateSnapshotResponsePB, error) {
 
 	if len(opConfig.ScheduleID) > 0 {

@@ -21,6 +21,7 @@ import (
 	"github.com/radekg/yugabyte-db-go-client/cmd/setloadbalancerstate"
 
 	snapshotscreate "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/create"
+	snapshotslist "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/list"
 
 	"github.com/spf13/cobra"
 )
@@ -53,6 +54,7 @@ func init() {
 	rootCmd.AddCommand(setloadbalancerstate.Command)
 
 	rootCmd.AddCommand(snapshotscreate.Command)
+	rootCmd.AddCommand(snapshotslist.Command)
 }
 
 func main() {

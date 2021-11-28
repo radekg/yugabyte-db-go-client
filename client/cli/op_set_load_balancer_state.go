@@ -5,7 +5,7 @@ import (
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
 
-// Ping pings a certain YB server.
+// Set load balancer state.
 func (c *defaultYBCliClient) SetLoadBalancerState(enable bool) (*ybApi.ChangeLoadBalancerStateResponsePB, error) {
 	payload := &ybApi.ChangeLoadBalancerStateRequestPB{
 		IsEnabled: utils.PBool(enable),
