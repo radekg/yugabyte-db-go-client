@@ -26,6 +26,9 @@ type YBCliClient interface {
 	MasterLeaderStepDown() (*ybApi.GetMasterRegistrationResponsePB, error)
 	Ping() (*ybApi.PingResponsePB, error)
 	SetLoadBalancerState(bool) (*ybApi.ChangeLoadBalancerStateResponsePB, error)
+
+	SnapshotsCreate(*configs.OpSnapshotCreateConfig) (*ybApi.CreateSnapshotResponsePB, error)
+
 	OnConnected() <-chan struct{}
 	OnConnectError() <-chan error
 }

@@ -31,7 +31,7 @@ func NewOpGetTableLocationsConfig() *OpGetTableLocationsConfig {
 // FlagSet returns an instance of the flag set for the configuration.
 func (c *OpGetTableLocationsConfig) FlagSet() *pflag.FlagSet {
 	if c.initFlagSet() {
-		c.flagSet.StringVar(&c.Keyspace, "keyspace", "", "Keyspace to check in")
+		c.flagSet.StringVar(&c.Keyspace, "keyspace", "", "Keyspace to describe the table in")
 		c.flagSet.StringVar(&c.Name, "name", "", "Table name to check for")
 		c.flagSet.StringVar(&c.UUID, "uuid", "", "Table identifier to check for")
 		c.flagSet.BytesBase64Var(&c.PartitionKeyStart, "partition-key-start", []byte{}, "Partition key range start")
@@ -339,6 +339,48 @@ func (c *OpSetLoadBalancerEnableConfig) Validate() error {
 	}
 	if c.Enabled && c.Disabled {
 		return fmt.Errorf("--enabled and --disabled: choose one")
+	}
+	return nil
+}
+
+// ==
+
+// OpSnapshotCreateConfig represents a command specific config.
+type OpSnapshotCreateConfig struct {
+	flagBase
+
+	Keyspace         string
+	TableNames       []string
+	TableUUIDs       []string
+	TransactionAware bool
+	AddIndexes       bool
+	Imported         bool
+	ScheduleID       []byte
+}
+
+// NewOpSnapshotCreateConfig returns an instance of the command specific config.
+func NewOpSnapshotCreateConfig() *OpSnapshotCreateConfig {
+	return &OpSnapshotCreateConfig{}
+}
+
+// FlagSet returns an instance of the flag set for the configuration.
+func (c *OpSnapshotCreateConfig) FlagSet() *pflag.FlagSet {
+	if c.initFlagSet() {
+		c.flagSet.StringVar(&c.Keyspace, "keyspace", "", "Keyspace for the tables in this create request")
+		c.flagSet.StringSliceVar(&c.TableNames, "name", []string{}, "Table names to create snapshots for")
+		c.flagSet.StringSliceVar(&c.TableUUIDs, "uuid", []string{}, "Table IDs to create snapshots for")
+		c.flagSet.BoolVar(&c.TransactionAware, "transaction-aware", false, "Transaction aware")
+		c.flagSet.BoolVar(&c.AddIndexes, "add-indexes", false, "Add indexes")
+		c.flagSet.BoolVar(&c.Imported, "imported", false, "Interpret this snapshot as imported")
+		c.flagSet.BytesBase64Var(&c.ScheduleID, "schedule-id", []byte{}, "Create snapshot to this schedule, other fields are ignored")
+	}
+	return c.flagSet
+}
+
+// Validate validates the correctness of the configuration.
+func (c *OpSnapshotCreateConfig) Validate() error {
+	if len(c.ScheduleID) > 0 && c.Keyspace == "" {
+		return fmt.Errorf("--keyspace required")
 	}
 	return nil
 }

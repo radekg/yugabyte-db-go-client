@@ -36,5 +36,5 @@ func (c *defaultYBCliClient) GetTabletsForTable(opConfig *configs.OpGetTableLoca
 		}
 	}
 
-	return nil, fmt.Errorf("not found")
+	return nil, fmt.Errorf("table %s.%s not found", opConfig.Keyspace, opConfig.Name)
 }

@@ -106,6 +106,7 @@ where the command is one of:
 - `describe-table`: Info on a table in this database.
 - `get-load-move-completion`: Get the completion percentage of tablet load move from blacklisted servers.
 - `get-master-registration`: Get master registration info.
+- `get-tablets-for-table`: Fetch tablet information for a given table.
 - `get-universe-config`: Get the placement info and blacklist info of the universe.
 - `is-load-balanced`: Check if master leader thinks that the load is balanced across TServers.
 - `is-server-ready`: Check if server is ready to serve IO requests.
@@ -116,6 +117,10 @@ where the command is one of:
 - `master-leader-step-down`: Try to force the current master leader to step down.
 - `ping`: Ping a certain YB server.
 - `set-load-balancer-state`: Set the load balancer state.
+
+#### Snapshot commands
+
+- `create-snapshot`: Creates a snapshot of an entire keyspace or selected tables in a keyspace.
 
 ### Flags
 
@@ -142,6 +147,24 @@ Logging flags:
 - `--name`: string, table name to check for, default `<empty string>`
 - `--uuid`: string, table identified (uuid) to check for, default `<empty string>`
 
+#### create-snapshot
+
+Multiple `--name` and `--uuid` values can be combined together. To create a snapshot of an entire keyspace, do not specify any `--name` or `--uuid`.
+
+- `--keyspace`: string, keyspace name to create snapshot of, default `<empty string>`
+- `--name`: repeated string, table name to create snapshot of, default `empty list`
+- `--uuid`: repeated string, table ID to create snapshot of, default `empty list`
+- `--transaction-aware`: boolean, transaction aware, default `false`
+- `--add-indexes`: boolean, add indexes, default `false`, YCQL only
+- `--imported`: boolean, interpret this snapshot as imported, default `false`
+- `--schedule-id`: base64 encoded, create snapshot to this schedule, other fields are ignored, default `empty`
+
+Examples:
+
+- create a snapshot of an entire YSQL `yugabyte` database: `cli create-snapshot --keyspace ysql.yugabyte`
+- create a snapshot of selected YSQL tables in the `yugabyte` database: `cli create-snapshot --keyspace ysql.yugabyte --name table --name another-table`
+- create a snapshot of selected YCQL tables in the `example` database: `cli create-snapshot --keyspace ycql.example --name table --add-indexes`
+
 #### describe-table
 
 - `--keyspace`: string, keyspace name to check in, default `<empty string>`, ignored when using `--uuid`
@@ -152,6 +175,16 @@ Examples:
 
 - describe table `test` in the `yugabyte` database: `cli describe-table --keyspace yugabyte --name test`
 - describe table with ID `000033c0000030008000000000004000`: `cli describe-table --uuid 000033c0000030008000000000004000`
+
+#### get-tablets-for-table
+
+- `--keyspace`: string, keyspace to describe the table in, default `empty string`
+- `--name`: string, table name to check for, default `empty string`
+- `--uuid`: string, table identifier to check for, default `empty string`
+- `--partition-key-start`: base64 encoded, partition key range start, default `empty`
+- `--partition-key-end`: base64 encoded, partition key range end, default `empty`
+- `--max-returned-locations`: uint32, maximum number of returned locations, default `10`
+- `--require-tablet-running`: boolean, require tablet running, default `false`
 
 #### leader-step-down
 

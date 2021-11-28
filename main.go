@@ -19,6 +19,9 @@ import (
 	"github.com/radekg/yugabyte-db-go-client/cmd/masterleaderstepdown"
 	"github.com/radekg/yugabyte-db-go-client/cmd/ping"
 	"github.com/radekg/yugabyte-db-go-client/cmd/setloadbalancerstate"
+
+	snapshotscreate "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/create"
+
 	"github.com/spf13/cobra"
 )
 
@@ -48,6 +51,8 @@ func init() {
 	rootCmd.AddCommand(masterleaderstepdown.Command)
 	rootCmd.AddCommand(ping.Command)
 	rootCmd.AddCommand(setloadbalancerstate.Command)
+
+	rootCmd.AddCommand(snapshotscreate.Command)
 }
 
 func main() {
