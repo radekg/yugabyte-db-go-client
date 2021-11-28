@@ -36,7 +36,7 @@ func NewCliConfig() *CliConfig {
 func (c *CliConfig) FlagSet() *pflag.FlagSet {
 	if c.initFlagSet() {
 		c.flagSet.StringVar(&c.MasterHostPort, "master", "127.0.0.1:7100", "Master host port")
-		c.flagSet.DurationVar(&c.OpTimeout, "operation-timeout", time.Duration(time.Second*5), "Operation timeout")
+		c.flagSet.DurationVar(&c.OpTimeout, "operation-timeout", time.Duration(time.Second*60), "Operation timeout")
 		c.flagSet.StringVar(&c.TLSCaCertFilePath, "tls-ca-cert-file-path", "", "TLS CA certificate file path")
 		c.flagSet.StringVar(&c.TLSCertFilePath, "tls-cert-file-path", "", "TLS certificate file path")
 		c.flagSet.StringVar(&c.TLSKeyFilePath, "tls-key-file-path", "", "TLS key file path")

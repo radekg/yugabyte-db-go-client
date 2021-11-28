@@ -8,11 +8,11 @@ import (
 )
 
 // DescribeTable returns info on a table in this database.
-func (c *defaultYBCliClient) DescribeTable(opConfig *configs.OpGetTableSchemaConfig) (*ybApi.GetTableSchemaResponsePB, error) {
+func (c *defaultYBCliClient) GetTabletsForTable(opConfig *configs.OpGetTableLocationsConfig) (*ybApi.GetTableLocationsResponsePB, error) {
 
 	if opConfig.UUID != "" {
 		// we can short circuit everything below:
-		return c.getTableSchemaByUUID([]byte(opConfig.UUID))
+		return c.getTabletsForTableByUUID([]byte(opConfig.UUID), opConfig)
 	}
 
 	payloadListTables := &ybApi.ListTablesRequestPB{}
@@ -28,7 +28,7 @@ func (c *defaultYBCliClient) DescribeTable(opConfig *configs.OpGetTableSchemaCon
 		if tableInfo.Namespace != nil {
 			namespace := *tableInfo.Namespace
 			if *namespace.Name == opConfig.Keyspace && *tableInfo.Name == opConfig.Name {
-				return c.getTableSchemaByUUID(tableInfo.Id)
+				return c.getTabletsForTableByUUID(tableInfo.Id, opConfig)
 			}
 		}
 	}
