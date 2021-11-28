@@ -15,7 +15,10 @@ func (c *defaultYBCliClient) DescribeTable(opConfig *configs.OpGetTableSchemaCon
 		return c.getTableSchemaByUUID([]byte(opConfig.UUID))
 	}
 
-	payloadListTables := &ybApi.ListTablesRequestPB{}
+	parsedKeyspace := parseKeyspace(opConfig.Keyspace)
+	payloadListTables := &ybApi.ListTablesRequestPB{
+		Namespace: parsedKeyspace.toProtoKeyspace(),
+	}
 	responseListTablesPayload := &ybApi.ListTablesResponsePB{}
 	if err := c.connectedClient.Execute(payloadListTables, responseListTablesPayload); err != nil {
 		return nil, err
@@ -27,7 +30,7 @@ func (c *defaultYBCliClient) DescribeTable(opConfig *configs.OpGetTableSchemaCon
 	for _, tableInfo := range responseListTablesPayload.Tables {
 		if tableInfo.Namespace != nil {
 			namespace := *tableInfo.Namespace
-			if *namespace.Name == opConfig.Keyspace && *tableInfo.Name == opConfig.Name {
+			if *namespace.Name == parsedKeyspace.Keyspace && *tableInfo.Name == opConfig.Name {
 				return c.getTableSchemaByUUID(tableInfo.Id)
 			}
 		}

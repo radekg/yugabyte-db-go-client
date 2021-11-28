@@ -93,7 +93,7 @@ func (c *OpGetTableSchemaConfig) Validate() error {
 // ==
 
 var (
-	supportedNamespaceType = []string{"cql", "pgsql", "redis"}
+	supportedNamespaceType = []string{"ycql", "ysql", "yedis"}
 	supportedRelationType  = []string{"system_table", "user_table", "index"}
 )
 
@@ -102,8 +102,7 @@ type OpListTablesConfig struct {
 	flagBase
 
 	NameFilter          string
-	NamespaceName       string
-	NamespaceType       string
+	Keyspace            string
 	ExcludeSystemTables bool
 	IncludeNotRunning   bool
 	RelationType        []string
@@ -118,8 +117,7 @@ func NewOpListTablesConfig() *OpListTablesConfig {
 func (c *OpListTablesConfig) FlagSet() *pflag.FlagSet {
 	if c.initFlagSet() {
 		c.flagSet.StringVar(&c.NameFilter, "name-filter", "", "When used, only returns tables that satisfy a substring match on name_filter")
-		c.flagSet.StringVar(&c.NamespaceName, "keyspace", "", "The namespace name to fetch info")
-		c.flagSet.StringVar(&c.NamespaceType, "namespace-type", "", fmt.Sprintf("Database type: %s", strings.Join(supportedNamespaceType, ", ")))
+		c.flagSet.StringVar(&c.Keyspace, "keyspace", "", "The namespace name to fetch info")
 		c.flagSet.BoolVar(&c.ExcludeSystemTables, "exclude-system-tables", false, "Exclude system tables")
 		c.flagSet.BoolVar(&c.IncludeNotRunning, "include-not-running", false, "Include not running")
 		c.flagSet.StringSliceVar(&c.RelationType, "relation-type", supportedRelationType, fmt.Sprintf("Filter tables based on RelationType: %s", strings.Join(supportedRelationType, ", ")))
@@ -129,18 +127,6 @@ func (c *OpListTablesConfig) FlagSet() *pflag.FlagSet {
 
 // Validate validates the correctness of the configuration.
 func (c *OpListTablesConfig) Validate() error {
-	if c.NamespaceType != "" {
-		var found bool
-		for _, opt := range supportedNamespaceType {
-			if opt == c.NamespaceType {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return fmt.Errorf("unsupported value '%s' for --namespace-type", c.NamespaceType)
-		}
-	}
 	for _, relation := range c.RelationType {
 		var found bool
 		for _, opt := range supportedRelationType {
