@@ -122,7 +122,7 @@ where the command is one of:
 Common flags:
 
 - `--master`: host port of the master to query, default `127.0.0.1:7100`
-- `--operation-timeout`: RPC operation timeout, duration string (`5s`, `1m`, ...), default `5s`
+- `--operation-timeout`: RPC operation timeout, duration string (`5s`, `1m`, ...), default `60s`
 - `--tls-ca-cert-file-path`: full path to the CA certificate file, default `empty string`
 - `--tls-cert-file-path`: full path to the certificate file, default `empty string`
 - `--tls-key-file-path`: full path to the key file, default `empty string`
