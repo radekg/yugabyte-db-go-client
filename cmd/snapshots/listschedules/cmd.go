@@ -1,4 +1,4 @@
-package snapshotslist
+package snapshotslistschedules
 
 import (
 	"encoding/json"
@@ -12,8 +12,8 @@ import (
 
 // Command is the command declaration.
 var Command = &cobra.Command{
-	Use:   "list-snapshots",
-	Short: "List snapshots",
+	Use:   "list-snapshot-schedules",
+	Short: "List snapshot schedules",
 	Run:   run,
 	Long:  ``,
 }
@@ -21,7 +21,7 @@ var Command = &cobra.Command{
 var (
 	commandConfig = configs.NewCliConfig()
 	logConfig     = configs.NewLogginConfig()
-	opConfig      = configs.NewOpSnapshotListConfig()
+	opConfig      = configs.NewOpSnapshotListSchedulesConfig()
 )
 
 func initFlags() {
@@ -40,7 +40,7 @@ func run(cobraCommand *cobra.Command, _ []string) {
 
 func processCommand() int {
 
-	logger := logConfig.NewLogger("list-snapshots")
+	logger := logConfig.NewLogger("list-snapshot-schedules")
 
 	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig} {
 		if err := validatingConfig.Validate(); err != nil {
@@ -68,9 +68,9 @@ func processCommand() int {
 	}
 	defer cliClient.Close()
 
-	responsePayload, err := cliClient.SnapshotsList(opConfig)
+	responsePayload, err := cliClient.SnapshotsListSchedules(opConfig)
 	if err != nil {
-		logger.Error("failed listing snapshots", "reason", err)
+		logger.Error("failed listing snapshot schedules", "reason", err)
 		return 1
 	}
 

@@ -1,4 +1,4 @@
-package snapshotslist
+package snapshotsdeleteschedule
 
 import (
 	"encoding/json"
@@ -12,8 +12,8 @@ import (
 
 // Command is the command declaration.
 var Command = &cobra.Command{
-	Use:   "list-snapshots",
-	Short: "List snapshots",
+	Use:   "delete-snapshot-schedule",
+	Short: "Delete snapshot schedule",
 	Run:   run,
 	Long:  ``,
 }
@@ -21,7 +21,7 @@ var Command = &cobra.Command{
 var (
 	commandConfig = configs.NewCliConfig()
 	logConfig     = configs.NewLogginConfig()
-	opConfig      = configs.NewOpSnapshotListConfig()
+	opConfig      = configs.NewOpSnapshotDeleteScheduleConfig()
 )
 
 func initFlags() {
@@ -40,9 +40,9 @@ func run(cobraCommand *cobra.Command, _ []string) {
 
 func processCommand() int {
 
-	logger := logConfig.NewLogger("list-snapshots")
+	logger := logConfig.NewLogger("delete-snapshot-schedule")
 
-	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig} {
+	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig, opConfig} {
 		if err := validatingConfig.Validate(); err != nil {
 			logger.Error("configuration is invalid", "reason", err)
 			return 1
@@ -68,9 +68,9 @@ func processCommand() int {
 	}
 	defer cliClient.Close()
 
-	responsePayload, err := cliClient.SnapshotsList(opConfig)
+	responsePayload, err := cliClient.SnapshotsDeleteSchedule(opConfig)
 	if err != nil {
-		logger.Error("failed listing snapshots", "reason", err)
+		logger.Error("failed deleting snapshot schedule", "reason", err)
 		return 1
 	}
 

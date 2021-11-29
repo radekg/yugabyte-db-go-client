@@ -121,8 +121,12 @@ where the command is one of:
 #### Snapshot commands
 
 - `create-snapshot`: Creates a snapshot of an entire keyspace or selected tables in a keyspace.
-- `delete-snapshot`: Delete snapshot.
+- `delete-snapshot`: Delete a snapshot.
 - `list-snapshots`: List snapshots.
+
+- `create-snapshot-schedule`: Creates a snapshot schedule from an entire keyspace or selected tables in the keyspace.
+- `delete-snapshot-schedule`: Delete a snapshot schedule.
+- `list-snapshot-schedules`: List snapshot schedules.
 
 ### Flags
 
@@ -249,6 +253,25 @@ Examples:
 - `--snapshot-id`: string, snapshot identifier, default `empty string` (not defined)
 - `--list-deleted-snapshots`: boolean, list deleted snapshots, default `false`
 - `--prepare-for-backup`: boolean, prepare for backup, default `false`
+
+##### create-snapshot-schedule
+
+Choose on: `--delete-after` or `--delete-at`.
+
+- `--keyspace`: string, keyspace name to create snapshot of, default `<empty string>`
+- `--interval`: duration expression (`1h`, `1d`, ...), interval for taking snapshot in seconds, default `0` (undefined)
+- `--retention-duration`: duration expression (`1h`, `1d`, ...), how long store snapshots in seconds, default `0` (undefined)
+- `--delete-after`: duration expression (`1h`, `1d`, ...), how long until schedule is removed in seconds, hybrid time will be calculated by fetching server hybrid time and adding this value, default `0` (undefined)
+- `--delete-at`: duration expression (`1h`, `1d`, ...), how long until schedule is removed in seconds, hybrid time will be calculated by fetching server hybrid time and adding this value, default `0` (undefined)
+
+Examples:
+
+- create a snapshot schedule of an entire YSQL `yugabyte` database: `cli create-snapshot-schedule --keyspace ysql.yugabyte --interval 1h --retention-duration 2h --delete-after 1h`
+- create a snapshot schedule of selected YSQL tables in the `yugabyte` database: `cli create-snapshot-schedule --keyspace ysql.yugabyte --name table --name another-table`
+
+##### delete-snapshot-schedule
+
+- `--schedule-id`: string, snapshot identifier, required, default `empty string` (not defined)
 
 ## Minimal YugabyteDB cluster in Docker compose
 
