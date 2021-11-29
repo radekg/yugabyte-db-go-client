@@ -106,6 +106,7 @@ where the command is one of:
 - `describe-table`: Info on a table in this database.
 - `get-load-move-completion`: Get the completion percentage of tablet load move from blacklisted servers.
 - `get-master-registration`: Get master registration info.
+- `get-tablets-for-table`: Fetch tablet information for a given table.
 - `get-universe-config`: Get the placement info and blacklist info of the universe.
 - `is-load-balanced`: Check if master leader thinks that the load is balanced across TServers.
 - `is-server-ready`: Check if server is ready to serve IO requests.
@@ -116,6 +117,19 @@ where the command is one of:
 - `master-leader-step-down`: Try to force the current master leader to step down.
 - `ping`: Ping a certain YB server.
 - `set-load-balancer-state`: Set the load balancer state.
+
+#### Snapshot commands
+
+- `create-snapshot`: Creates a snapshot of an entire keyspace or selected tables in a keyspace.
+- `delete-snapshot`: Delete a snapshot.
+- `export-snapshot`: Exports a snapshot.
+- `import-snapshot`: Imports a snapshot.
+- `list-snapshots`: List snapshots.
+- `restore-snapshot`: Restore a snapshot.
+
+- `create-snapshot-schedule`: Creates a snapshot schedule from an entire keyspace or selected tables in the keyspace.
+- `delete-snapshot-schedule`: Delete a snapshot schedule.
+- `list-snapshot-schedules`: List snapshot schedules.
 
 ### Flags
 
@@ -153,6 +167,16 @@ Examples:
 - describe table `test` in the `yugabyte` database: `cli describe-table --keyspace yugabyte --name test`
 - describe table with ID `000033c0000030008000000000004000`: `cli describe-table --uuid 000033c0000030008000000000004000`
 
+#### get-tablets-for-table
+
+- `--keyspace`: string, keyspace to describe the table in, default `empty string`
+- `--name`: string, table name to check for, default `empty string`
+- `--uuid`: string, table identifier to check for, default `empty string`
+- `--partition-key-start`: base64 encoded, partition key range start, default `empty`
+- `--partition-key-end`: base64 encoded, partition key range end, default `empty`
+- `--max-returned-locations`: uint32, maximum number of returned locations, default `10`
+- `--require-tablet-running`: boolean, require tablet running, default `false`
+
 #### leader-step-down
 
 - `--destination-uuid`: UUID of server this request is addressed to, default `empty` - not specified
@@ -166,7 +190,7 @@ Examples:
 - `--keyspace`: string, the namespace name to fetch info, default `empty string`
 - `--exclude-system-tables`: boolean, exclude system tables, default `false`
 - `--include-not-running`: boolean, include not running, default `false`
-- `--relation-type`: list of strings, filter tables based on RelationType - supported values: `system_table`, `user_table`, `index`, default: all values
+- `--relation-type`: list of strings, filter tables based on RelationType - supported values: `system_table`, `user_table`, `index_table`, default: all values
 
 Examples:
 
@@ -202,6 +226,74 @@ Options are mutually exclusive, exactly one has to be set:
 
 - `--enabled`: boolean, default `false`, new desired state: enabled
 - `--disabled`: boolean, default `false`, new desired state: disabled
+
+#### Snapshot commands
+
+##### create-snapshot
+
+- `--keyspace`: string, keyspace name to create snapshot of, default `<empty string>`
+- `--name`: repeated string, table name to create snapshot of, default `empty list`
+- `--uuid`: repeated string, table ID to create snapshot of, default `empty list`
+- `--schedule-id`: base64 encoded, create snapshot to this schedule, other fields are ignored, default `empty`
+
+Remarks:
+
+- Multiple `--name` and `--uuid` values can be combined together.
+- YSQL keyspace snapshots do not support explicit `--name` and `--uuid` selection.
+- To create a snapshot of an entire keyspace, do not specify any `--name` or `--uuid`. YCQL only.
+- `yedis.*` keyspaces are not supported.
+
+Examples:
+
+- create a snapshot of an entire YSQL `yugabyte` database: `cli create-snapshot --keyspace ysql.yugabyte`
+- create a snapshot of selected YCQL tables in the `example` database: `cli create-snapshot --keyspace ycql.example --name table`
+
+##### delete-snapshot
+
+- `--snapshot-id`: string, snapshot identifier, required, default `empty string` (not defined)
+- `--base64-encoded`: boolean, base64 decode given snapshot ID before handling over to the API, default `false`
+
+##### list-snapshots
+
+- `--snapshot-id`: string, snapshot identifier, default `empty string` (not defined)
+- `--base64-encoded`: boolean, base64 decode given snapshot ID before handling over to the API, default `false`
+- `--list-deleted-snapshots`: boolean, list deleted snapshots, default `false`
+- `--prepare-for-backup`: boolean, prepare for backup, default `false`
+
+##### export-snapshot
+
+- `--snapshot-id`: string, snapshot identifier, default `empty string` (not defined)
+- `--base64-encoded`: boolean, base64 decode given snapshot ID before handling over to the API, default `false`
+- `--file-path`: string, full path to the export file, parent directories must exist, default `empty`
+
+##### import-snapshot
+
+- `--file-path`: string, full path to the exported snapshot file
+
+##### restore-snapshot
+
+- `--snapshot-id`: string, snapshot identifier, default `empty string` (not defined)
+- `--base64-encoded`: boolean, base64 decode given snapshot ID before handling over to the API, default `false`
+- `--restore-ht-micros`: uint64, absolute Timing Option: Max HybridTime, in micros, default `0` (undefined)
+
+##### create-snapshot-schedule
+
+Choose on: `--delete-after` or `--delete-at`.
+
+- `--keyspace`: string, keyspace name to create snapshot of, default `<empty string>`
+- `--interval`: duration expression (`1h`, `1d`, ...), interval for taking snapshot in seconds, default `0` (undefined)
+- `--retention-duration`: duration expression (`1h`, `1d`, ...), how long store snapshots in seconds, default `0` (undefined)
+- `--delete-after`: duration expression (`1h`, `1d`, ...), how long until schedule is removed in seconds, hybrid time will be calculated by fetching server hybrid time and adding this value, default `0` (undefined)
+- `--delete-at`: duration expression (`1h`, `1d`, ...), how long until schedule is removed in seconds, hybrid time will be calculated by fetching server hybrid time and adding this value, default `0` (undefined)
+
+Examples:
+
+- create a snapshot schedule of an entire YSQL `yugabyte` database: `cli create-snapshot-schedule --keyspace ysql.yugabyte --interval 1h --retention-duration 2h --delete-after 1h`
+- create a snapshot schedule of selected YSQL tables in the `yugabyte` database: `cli create-snapshot-schedule --keyspace ysql.yugabyte --name table --name another-table`
+
+##### delete-snapshot-schedule
+
+- `--schedule-id`: string, snapshot identifier, required, default `empty string` (not defined)
 
 ## Minimal YugabyteDB cluster in Docker compose
 

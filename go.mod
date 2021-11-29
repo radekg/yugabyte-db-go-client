@@ -3,6 +3,7 @@ module github.com/radekg/yugabyte-db-go-client
 go 1.16
 
 require (
+	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-hclog v0.16.2
 	github.com/radekg/yugabyte-db-go-proto/v2 v2.11.0-2
 	github.com/spf13/cobra v1.2.1

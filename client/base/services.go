@@ -21,6 +21,7 @@ func loadServiceDefinitions(registry ServiceRegistry) {
 		ybApi.File_yb_consensus_log_proto,
 		ybApi.File_yb_docdb_docdb_proto,
 		ybApi.File_yb_fs_fs_proto,
+		ybApi.File_yb_master_master_backup_proto,
 		ybApi.File_yb_master_master_proto,
 		ybApi.File_yb_rocksdb_db_version_edit_proto,
 		ybApi.File_yb_rpc_rpc_header_proto,

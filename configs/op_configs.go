@@ -3,6 +3,7 @@ package configs
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/spf13/pflag"
 )
@@ -31,7 +32,7 @@ func NewOpGetTableLocationsConfig() *OpGetTableLocationsConfig {
 // FlagSet returns an instance of the flag set for the configuration.
 func (c *OpGetTableLocationsConfig) FlagSet() *pflag.FlagSet {
 	if c.initFlagSet() {
-		c.flagSet.StringVar(&c.Keyspace, "keyspace", "", "Keyspace to check in")
+		c.flagSet.StringVar(&c.Keyspace, "keyspace", "", "Keyspace to describe the table in")
 		c.flagSet.StringVar(&c.Name, "name", "", "Table name to check for")
 		c.flagSet.StringVar(&c.UUID, "uuid", "", "Table identifier to check for")
 		c.flagSet.BytesBase64Var(&c.PartitionKeyStart, "partition-key-start", []byte{}, "Partition key range start")
@@ -94,7 +95,7 @@ func (c *OpGetTableSchemaConfig) Validate() error {
 
 var (
 	supportedNamespaceType = []string{"ycql", "ysql", "yedis"}
-	supportedRelationType  = []string{"system_table", "user_table", "index"}
+	supportedRelationType  = []string{"system_table", "user_table", "index_table"}
 )
 
 // OpListTablesConfig represents a command specific config.
@@ -341,4 +342,259 @@ func (c *OpSetLoadBalancerEnableConfig) Validate() error {
 		return fmt.Errorf("--enabled and --disabled: choose one")
 	}
 	return nil
+}
+
+// ==
+
+// OpSnapshotCreateScheduleConfig represents a command specific config.
+type OpSnapshotCreateScheduleConfig struct {
+	flagBase
+
+	Keyspace              string
+	IntervalSecs          time.Duration
+	RetendionDurationSecs time.Duration
+	DeleteAfter           time.Duration
+	DeleteTime            uint64
+}
+
+// NewOpSnapshotCreateScheduleConfig returns an instance of the command specific config.
+func NewOpSnapshotCreateScheduleConfig() *OpSnapshotCreateScheduleConfig {
+	return &OpSnapshotCreateScheduleConfig{}
+}
+
+// FlagSet returns an instance of the flag set for the configuration.
+func (c *OpSnapshotCreateScheduleConfig) FlagSet() *pflag.FlagSet {
+	if c.initFlagSet() {
+		c.flagSet.StringVar(&c.Keyspace, "keyspace", "", "Keyspace for the tables in this create request")
+		c.flagSet.DurationVar(&c.IntervalSecs, "interval", time.Second*0, "Interval for taking snapshot in seconds")
+		c.flagSet.DurationVar(&c.RetendionDurationSecs, "retention-duration", time.Second*0, "How long store snapshots in seconds")
+		c.flagSet.DurationVar(&c.DeleteAfter, "delete-after", time.Second*0, "How long until schedule is removed in seconds, hybrid time will be calculated by fetching server hybrid time and adding this value")
+		c.flagSet.Uint64Var(&c.DeleteTime, "delete-at", 0, "Hybrid time when this schedule is deleted")
+	}
+	return c.flagSet
+}
+
+// Validate validates the correctness of the configuration.
+func (c *OpSnapshotCreateScheduleConfig) Validate() error {
+	if c.Keyspace == "" {
+		return fmt.Errorf("--keyspace is required")
+	}
+	if c.DeleteAfter.Milliseconds() > 0 && c.DeleteTime > 0 {
+		return fmt.Errorf("--delete-after and --delete-at specified, choose one")
+	}
+	return nil
+}
+
+// ==
+
+// OpSnapshotCreateConfig represents a command specific config.
+type OpSnapshotCreateConfig struct {
+	flagBase
+
+	Keyspace   string
+	TableNames []string
+	TableUUIDs []string
+	ScheduleID []byte
+}
+
+// NewOpSnapshotCreateConfig returns an instance of the command specific config.
+func NewOpSnapshotCreateConfig() *OpSnapshotCreateConfig {
+	return &OpSnapshotCreateConfig{}
+}
+
+// FlagSet returns an instance of the flag set for the configuration.
+func (c *OpSnapshotCreateConfig) FlagSet() *pflag.FlagSet {
+	if c.initFlagSet() {
+		c.flagSet.StringVar(&c.Keyspace, "keyspace", "", "Keyspace for the tables in this create request")
+		c.flagSet.StringSliceVar(&c.TableNames, "name", []string{}, "Table names to create snapshots for")
+		c.flagSet.StringSliceVar(&c.TableUUIDs, "uuid", []string{}, "Table IDs to create snapshots for")
+		c.flagSet.BytesBase64Var(&c.ScheduleID, "schedule-id", []byte{}, "Create snapshot to this schedule, other fields are ignored")
+	}
+	return c.flagSet
+}
+
+// Validate validates the correctness of the configuration.
+func (c *OpSnapshotCreateConfig) Validate() error {
+	if len(c.ScheduleID) > 0 && c.Keyspace == "" {
+		return fmt.Errorf("--keyspace is required")
+	}
+	if c.Keyspace != "" {
+		if strings.HasPrefix(c.Keyspace, "yedis.") {
+			return fmt.Errorf("--keyspace yedis.* not supported")
+		}
+		if !strings.HasPrefix(c.Keyspace, "ycql.") && !strings.HasPrefix(c.Keyspace, "ysql.") {
+			// set default keyspace type:
+			c.Keyspace = fmt.Sprintf("ycql.%s", c.Keyspace)
+		}
+		if strings.HasPrefix(c.Keyspace, "ysql.") {
+			if len(c.TableNames) > 0 || len(c.TableUUIDs) > 0 {
+				return fmt.Errorf("--keyspace ysql.* does not support explicit table selection, remove any --name and --uuid")
+			}
+		}
+	}
+	return nil
+}
+
+// ==
+
+// OpSnapshotDeleteScheduleConfig represents a command specific config.
+type OpSnapshotDeleteScheduleConfig struct {
+	flagBase
+
+	ScheduleID []byte
+}
+
+// NewOpSnapshotDeleteScheduleConfig returns an instance of the command specific config.
+func NewOpSnapshotDeleteScheduleConfig() *OpSnapshotDeleteScheduleConfig {
+	return &OpSnapshotDeleteScheduleConfig{}
+}
+
+// FlagSet returns an instance of the flag set for the configuration.
+func (c *OpSnapshotDeleteScheduleConfig) FlagSet() *pflag.FlagSet {
+	if c.initFlagSet() {
+		c.flagSet.BytesBase64Var(&c.ScheduleID, "schedule-id", []byte{}, "Snapshot schedule identifier")
+	}
+	return c.flagSet
+}
+
+// Validate validates the correctness of the configuration.
+func (c *OpSnapshotDeleteScheduleConfig) Validate() error {
+	if len(c.ScheduleID) == 0 {
+		return fmt.Errorf("--schedule-id is required")
+	}
+	return nil
+}
+
+// ==
+
+// OpSnapshotDeleteConfig represents a command specific config.
+type OpSnapshotDeleteConfig struct {
+	flagBase
+
+	SnapshotID    string
+	Base64Encoded bool
+}
+
+// NewOpSnapshotDeleteConfig returns an instance of the command specific config.
+func NewOpSnapshotDeleteConfig() *OpSnapshotDeleteConfig {
+	return &OpSnapshotDeleteConfig{}
+}
+
+// FlagSet returns an instance of the flag set for the configuration.
+func (c *OpSnapshotDeleteConfig) FlagSet() *pflag.FlagSet {
+	if c.initFlagSet() {
+		c.flagSet.StringVar(&c.SnapshotID, "snapshot-id", "", "Snapshot identifier")
+		c.flagSet.BoolVar(&c.Base64Encoded, "base64-encoded", false, "If true, accepts the --snapshot-id as base64 encoded string")
+	}
+	return c.flagSet
+}
+
+// Validate validates the correctness of the configuration.
+func (c *OpSnapshotDeleteConfig) Validate() error {
+	if c.SnapshotID == "" {
+		return fmt.Errorf("--snapshot-id is required")
+	}
+	return nil
+}
+
+// ==
+
+// OpSnapshotListSchedulesConfig represents a command specific config.
+type OpSnapshotListSchedulesConfig struct {
+	flagBase
+
+	ScheduleID []byte
+}
+
+// NewOpSnapshotListSchedulesConfig returns an instance of the command specific config.
+func NewOpSnapshotListSchedulesConfig() *OpSnapshotListSchedulesConfig {
+	return &OpSnapshotListSchedulesConfig{}
+}
+
+// FlagSet returns an instance of the flag set for the configuration.
+func (c *OpSnapshotListSchedulesConfig) FlagSet() *pflag.FlagSet {
+	if c.initFlagSet() {
+		c.flagSet.BytesBase64Var(&c.ScheduleID, "schedule-id", []byte{}, "Snapshot schedule identifier")
+	}
+	return c.flagSet
+}
+
+// ==
+
+// OpSnapshotListConfig represents a command specific config.
+type OpSnapshotListConfig struct {
+	flagBase
+
+	SnapshotID           string
+	Base64Encoded        bool
+	ListDeletedSnapshots bool
+	PrepareForBackup     bool
+}
+
+// NewOpSnapshotListConfig returns an instance of the command specific config.
+func NewOpSnapshotListConfig() *OpSnapshotListConfig {
+	return &OpSnapshotListConfig{}
+}
+
+// FlagSet returns an instance of the flag set for the configuration.
+func (c *OpSnapshotListConfig) FlagSet() *pflag.FlagSet {
+	if c.initFlagSet() {
+		c.flagSet.StringVar(&c.SnapshotID, "snapshot-id", "", "Snapshot identifier")
+		c.flagSet.BoolVar(&c.Base64Encoded, "base64-encoded", false, "If true, accepts the --snapshot-id as base64 encoded string")
+		c.flagSet.BoolVar(&c.ListDeletedSnapshots, "list-deleted-snapshots", false, "List deleted snapshots")
+		c.flagSet.BoolVar(&c.PrepareForBackup, "prepare-for-backup", false, "Prepare for backup")
+	}
+	return c.flagSet
+}
+
+// ==
+
+// OpSnapshotExportConfig represents a command specific config.
+type OpSnapshotExportConfig struct {
+	flagBase
+
+	SnapshotID    string
+	Base64Encoded bool
+	FilePath      string
+}
+
+// NewOpSnapshotExportConfig returns an instance of the command specific config.
+func NewOpSnapshotExportConfig() *OpSnapshotExportConfig {
+	return &OpSnapshotExportConfig{}
+}
+
+// FlagSet returns an instance of the flag set for the configuration.
+func (c *OpSnapshotExportConfig) FlagSet() *pflag.FlagSet {
+	if c.initFlagSet() {
+		c.flagSet.StringVar(&c.SnapshotID, "snapshot-id", "", "Snapshot identifier")
+		c.flagSet.BoolVar(&c.Base64Encoded, "base64-encoded", false, "If true, accepts the --snapshot-id as base64 encoded string")
+		c.flagSet.StringVar(&c.FilePath, "file-path", "", "Absolute path to the snapshot export file, parent directories must exist")
+	}
+	return c.flagSet
+}
+
+// ==
+
+// OpSnapshotRestoreConfig represents a command specific config.
+type OpSnapshotRestoreConfig struct {
+	flagBase
+
+	SnapshotID    string
+	Base64Encoded bool
+	RestoreHt     uint64
+}
+
+// NewOpSnapshotRestoreConfig returns an instance of the command specific config.
+func NewOpSnapshotRestoreConfig() *OpSnapshotRestoreConfig {
+	return &OpSnapshotRestoreConfig{}
+}
+
+// FlagSet returns an instance of the flag set for the configuration.
+func (c *OpSnapshotRestoreConfig) FlagSet() *pflag.FlagSet {
+	if c.initFlagSet() {
+		c.flagSet.StringVar(&c.SnapshotID, "snapshot-id", "", "Snapshot identifier")
+		c.flagSet.BoolVar(&c.Base64Encoded, "base64-encoded", false, "If true, accepts the --snapshot-id as base64 encoded string")
+		c.flagSet.Uint64Var(&c.RestoreHt, "restore-ht-micros", 0, "Absolute Timing Option: Max HybridTime, in Micros")
+	}
+	return c.flagSet
 }

@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"fmt"
-
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
@@ -34,9 +32,6 @@ func (c *defaultYBCliClient) ListTables(opConfig *configs.OpListTablesConfig) (*
 	responsePayload := &ybApi.ListTablesResponsePB{}
 	if err := c.connectedClient.Execute(payload, responsePayload); err != nil {
 		return nil, err
-	}
-	if err := responsePayload.GetError(); err != nil {
-		return nil, fmt.Errorf(err.String())
 	}
 	return responsePayload, nil
 }

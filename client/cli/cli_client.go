@@ -26,12 +26,24 @@ type YBCliClient interface {
 	MasterLeaderStepDown() (*ybApi.GetMasterRegistrationResponsePB, error)
 	Ping() (*ybApi.PingResponsePB, error)
 	SetLoadBalancerState(bool) (*ybApi.ChangeLoadBalancerStateResponsePB, error)
+
+	SnapshotsCreateSchedule(*configs.OpSnapshotCreateScheduleConfig) (*ybApi.CreateSnapshotScheduleResponsePB, error)
+	SnapshotsCreate(*configs.OpSnapshotCreateConfig) (*ybApi.CreateSnapshotResponsePB, error)
+	SnapshotsDeleteSchedule(*configs.OpSnapshotDeleteScheduleConfig) (*ybApi.DeleteSnapshotScheduleResponsePB, error)
+	SnapshotsDelete(*configs.OpSnapshotDeleteConfig) (*ybApi.DeleteSnapshotResponsePB, error)
+	SnapshotsExport(*configs.OpSnapshotExportConfig) (*SnapshotExportData, error)
+	SnapshotsImport(*configs.OpSnapshotExportConfig) (*ybApi.ImportSnapshotMetaResponsePB, error)
+	SnapshotsListSchedules(*configs.OpSnapshotListSchedulesConfig) (*ybApi.ListSnapshotSchedulesResponsePB, error)
+	SnapshotsList(*configs.OpSnapshotListConfig) (*ybApi.ListSnapshotsResponsePB, error)
+	SnapshotsRestore(*configs.OpSnapshotRestoreConfig) (*ybApi.RestoreSnapshotResponsePB, error)
+
 	OnConnected() <-chan struct{}
 	OnConnectError() <-chan error
 }
 
 type defaultYBCliClient struct {
 	connectedClient base.YBConnectedClient
+	logger          hclog.Logger
 }
 
 // NewYBConnectedClient returns a configured instance of the default CLI client.
@@ -42,6 +54,7 @@ func NewYBConnectedClient(cfg *configs.YBClientConfig, logger hclog.Logger) (YBC
 	}
 	return &defaultYBCliClient{
 		connectedClient: connectedClient,
+		logger:          logger,
 	}, nil
 }
 

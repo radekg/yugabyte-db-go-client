@@ -19,6 +19,17 @@ import (
 	"github.com/radekg/yugabyte-db-go-client/cmd/masterleaderstepdown"
 	"github.com/radekg/yugabyte-db-go-client/cmd/ping"
 	"github.com/radekg/yugabyte-db-go-client/cmd/setloadbalancerstate"
+
+	snapshotscreate "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/create"
+	snapshotscreateschedule "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/createschedule"
+	snapshotsdelete "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/delete"
+	snapshotsdeleteschedule "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/deleteschedule"
+	snapshotsexport "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/export"
+	snapshotsimport "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/import"
+	snapshotslist "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/list"
+	snapshotslistschedules "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/listschedules"
+	snapshotsrestore "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/restore"
+
 	"github.com/spf13/cobra"
 )
 
@@ -48,6 +59,16 @@ func init() {
 	rootCmd.AddCommand(masterleaderstepdown.Command)
 	rootCmd.AddCommand(ping.Command)
 	rootCmd.AddCommand(setloadbalancerstate.Command)
+
+	rootCmd.AddCommand(snapshotscreateschedule.Command)
+	rootCmd.AddCommand(snapshotscreate.Command)
+	rootCmd.AddCommand(snapshotsdeleteschedule.Command)
+	rootCmd.AddCommand(snapshotsdelete.Command)
+	rootCmd.AddCommand(snapshotsexport.Command)
+	rootCmd.AddCommand(snapshotsimport.Command)
+	rootCmd.AddCommand(snapshotslistschedules.Command)
+	rootCmd.AddCommand(snapshotslist.Command)
+	rootCmd.AddCommand(snapshotsrestore.Command)
 }
 
 func main() {

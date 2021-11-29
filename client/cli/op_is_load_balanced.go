@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"fmt"
-
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	"github.com/radekg/yugabyte-db-go-client/utils"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
@@ -21,9 +19,6 @@ func (c *defaultYBCliClient) IsLoadBalanced(opConfig *configs.OpIsLoadBalancedCo
 	responsePayload := &ybApi.IsLoadBalancedResponsePB{}
 	if err := c.connectedClient.Execute(payload, responsePayload); err != nil {
 		return nil, err
-	}
-	if err := responsePayload.GetError(); err != nil {
-		return nil, fmt.Errorf(err.String())
 	}
 	return responsePayload, nil
 }
