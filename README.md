@@ -248,12 +248,20 @@ Examples:
 ##### delete-snapshot
 
 - `--snapshot-id`: string, snapshot identifier, required, default `empty string` (not defined)
+- `--base64-encoded`: boolean, base64 decode given snapshot ID before handling over to the API, default `false`
 
 ##### list-snapshots
 
 - `--snapshot-id`: string, snapshot identifier, default `empty string` (not defined)
+- `--base64-encoded`: boolean, base64 decode given snapshot ID before handling over to the API, default `false`
 - `--list-deleted-snapshots`: boolean, list deleted snapshots, default `false`
 - `--prepare-for-backup`: boolean, prepare for backup, default `false`
+
+##### export-snapshot
+
+- `--snapshot-id`: string, snapshot identifier, default `empty string` (not defined)
+- `--base64-encoded`: boolean, base64 decode given snapshot ID before handling over to the API, default `false`
+- `--file-path`: string, full path to the export file, parent directories must exist, default `empty`
 
 ##### create-snapshot-schedule
 

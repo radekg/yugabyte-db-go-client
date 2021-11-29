@@ -17,7 +17,7 @@ type SnapshotExportData struct {
 	Size     int64  `json:"size"`
 }
 
-// List snapshots.
+// Export snapshot.
 func (c *defaultYBCliClient) SnapshotsExport(opConfig *configs.OpSnapshotExportConfig) (*SnapshotExportData, error) {
 
 	givenSnapshotID, err := utils.SnapshotID(opConfig.SnapshotID, opConfig.Base64Encoded)
