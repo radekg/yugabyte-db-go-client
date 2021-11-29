@@ -95,7 +95,7 @@ func (c *OpGetTableSchemaConfig) Validate() error {
 
 var (
 	supportedNamespaceType = []string{"ycql", "ysql", "yedis"}
-	supportedRelationType  = []string{"system_table", "user_table", "index"}
+	supportedRelationType  = []string{"system_table", "user_table", "index_table"}
 )
 
 // OpListTablesConfig represents a command specific config.
@@ -391,13 +391,10 @@ func (c *OpSnapshotCreateScheduleConfig) Validate() error {
 type OpSnapshotCreateConfig struct {
 	flagBase
 
-	Keyspace         string
-	TableNames       []string
-	TableUUIDs       []string
-	TransactionAware bool
-	AddIndexes       bool
-	Imported         bool
-	ScheduleID       []byte
+	Keyspace   string
+	TableNames []string
+	TableUUIDs []string
+	ScheduleID []byte
 }
 
 // NewOpSnapshotCreateConfig returns an instance of the command specific config.
@@ -411,9 +408,6 @@ func (c *OpSnapshotCreateConfig) FlagSet() *pflag.FlagSet {
 		c.flagSet.StringVar(&c.Keyspace, "keyspace", "", "Keyspace for the tables in this create request")
 		c.flagSet.StringSliceVar(&c.TableNames, "name", []string{}, "Table names to create snapshots for")
 		c.flagSet.StringSliceVar(&c.TableUUIDs, "uuid", []string{}, "Table IDs to create snapshots for")
-		c.flagSet.BoolVar(&c.TransactionAware, "transaction-aware", false, "Transaction aware")
-		c.flagSet.BoolVar(&c.AddIndexes, "add-indexes", false, "Add indexes")
-		c.flagSet.BoolVar(&c.Imported, "imported", false, "Interpret this snapshot as imported")
 		c.flagSet.BytesBase64Var(&c.ScheduleID, "schedule-id", []byte{}, "Create snapshot to this schedule, other fields are ignored")
 	}
 	return c.flagSet
@@ -423,6 +417,20 @@ func (c *OpSnapshotCreateConfig) FlagSet() *pflag.FlagSet {
 func (c *OpSnapshotCreateConfig) Validate() error {
 	if len(c.ScheduleID) > 0 && c.Keyspace == "" {
 		return fmt.Errorf("--keyspace is required")
+	}
+	if c.Keyspace != "" {
+		if strings.HasPrefix(c.Keyspace, "yedis.") {
+			return fmt.Errorf("--keyspace yedis.* not supported")
+		}
+		if !strings.HasPrefix(c.Keyspace, "ycql.") && !strings.HasPrefix(c.Keyspace, "ysql.") {
+			// set default keyspace type:
+			c.Keyspace = fmt.Sprintf("ycql.%s", c.Keyspace)
+		}
+		if strings.HasPrefix(c.Keyspace, "ysql.") {
+			if len(c.TableNames) > 0 || len(c.TableUUIDs) > 0 {
+				return fmt.Errorf("--keyspace ysql.* does not support explicit table selection, remove any --name and --uuid")
+			}
+		}
 	}
 	return nil
 }

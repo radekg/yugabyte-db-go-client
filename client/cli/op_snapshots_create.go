@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
@@ -20,6 +22,19 @@ func (c *defaultYBCliClient) SnapshotsCreate(opConfig *configs.OpSnapshotCreateC
 		return responsePayload, nil
 	}
 
+	parsedKeyspace := parseKeyspace(opConfig.Keyspace)
+
+	switch parsedKeyspace.YQLDatabaseType {
+	case "ycql":
+		return createSnapshotYCQL(c, opConfig, parsedKeyspace)
+	case "ysql":
+		return createSnapshotYSQL(c, opConfig, parsedKeyspace)
+	default:
+		return nil, fmt.Errorf("unsupported snapshot keyspace type: %s", parsedKeyspace.YQLDatabaseType)
+	}
+}
+
+func createSnapshotYCQL(c *defaultYBCliClient, opConfig *configs.OpSnapshotCreateConfig, ns *parsedKeyspace) (*ybApi.CreateSnapshotResponsePB, error) {
 	tableIdentifiers := []*ybApi.TableIdentifierPB{}
 	for _, tableUUID := range opConfig.TableUUIDs {
 		tableIdentifiers = append(tableIdentifiers, &ybApi.TableIdentifierPB{
@@ -40,7 +55,6 @@ func (c *defaultYBCliClient) SnapshotsCreate(opConfig *configs.OpSnapshotCreateC
 	}
 
 	if len(tableIdentifiers) == 0 {
-		// load all tables:
 		tables, err := c.ListTables(&configs.OpListTablesConfig{
 			Keyspace: opConfig.Keyspace,
 		})
@@ -55,10 +69,47 @@ func (c *defaultYBCliClient) SnapshotsCreate(opConfig *configs.OpSnapshotCreateC
 	}
 
 	payload := &ybApi.CreateSnapshotRequestPB{
-		Tables:           tableIdentifiers,
-		TransactionAware: &opConfig.TransactionAware,
-		AddIndexes:       &opConfig.AddIndexes,
-		Imported:         &opConfig.Imported,
+		Tables: tableIdentifiers,
+		AddIndexes: func() *bool {
+			v := true // https://github.com/yugabyte/yugabyte-db/blob/d4d5688147734d1a36bbe58430f35ba4db2770f1/ent/src/yb/tools/yb-admin_cli_ent.cc#L119
+			return &v
+		}(),
+		TransactionAware: func() *bool {
+			v := true // https://github.com/yugabyte/yugabyte-db/blob/d4d5688147734d1a36bbe58430f35ba4db2770f1/ent/src/yb/tools/yb-admin_client_ent.cc#L247
+			return &v
+		}(),
+	}
+
+	responsePayload := &ybApi.CreateSnapshotResponsePB{}
+	if err := c.connectedClient.Execute(payload, responsePayload); err != nil {
+		return nil, err
+	}
+
+	return responsePayload, nil
+}
+
+func createSnapshotYSQL(c *defaultYBCliClient, opConfig *configs.OpSnapshotCreateConfig, ns *parsedKeyspace) (*ybApi.CreateSnapshotResponsePB, error) {
+	tablesPayload, err := c.ListTables(&configs.OpListTablesConfig{
+		Keyspace:            opConfig.Keyspace,
+		ExcludeSystemTables: true,                                  // https://github.com/yugabyte/yugabyte-db/blob/d4d5688147734d1a36bbe58430f35ba4db2770f1/ent/src/yb/tools/yb-admin_client_ent.cc#L262
+		RelationType:        []string{"user_table", "index_table"}, // https://github.com/yugabyte/yugabyte-db/blob/d4d5688147734d1a36bbe58430f35ba4db2770f1/ent/src/yb/tools/yb-admin_client_ent.cc#L263-L264
+	})
+	if err != nil {
+		return nil, err
+	}
+	tableIdentifiers := []*ybApi.TableIdentifierPB{}
+	for _, tableInfo := range tablesPayload.Tables {
+		tableIdentifiers = append(tableIdentifiers, &ybApi.TableIdentifierPB{
+			TableId: tableInfo.Id,
+		})
+	}
+
+	payload := &ybApi.CreateSnapshotRequestPB{
+		Tables: tableIdentifiers,
+		AddIndexes: func() *bool {
+			v := false
+			return &v
+		}(),
 	}
 
 	responsePayload := &ybApi.CreateSnapshotResponsePB{}

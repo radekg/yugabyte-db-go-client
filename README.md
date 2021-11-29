@@ -187,7 +187,7 @@ Examples:
 - `--keyspace`: string, the namespace name to fetch info, default `empty string`
 - `--exclude-system-tables`: boolean, exclude system tables, default `false`
 - `--include-not-running`: boolean, include not running, default `false`
-- `--relation-type`: list of strings, filter tables based on RelationType - supported values: `system_table`, `user_table`, `index`, default: all values
+- `--relation-type`: list of strings, filter tables based on RelationType - supported values: `system_table`, `user_table`, `index_table`, default: all values
 
 Examples:
 
@@ -228,21 +228,22 @@ Options are mutually exclusive, exactly one has to be set:
 
 ##### create-snapshot
 
-Multiple `--name` and `--uuid` values can be combined together. To create a snapshot of an entire keyspace, do not specify any `--name` or `--uuid`.
-
 - `--keyspace`: string, keyspace name to create snapshot of, default `<empty string>`
 - `--name`: repeated string, table name to create snapshot of, default `empty list`
 - `--uuid`: repeated string, table ID to create snapshot of, default `empty list`
-- `--transaction-aware`: boolean, transaction aware, default `false`
-- `--add-indexes`: boolean, add indexes, default `false`, YCQL only
-- `--imported`: boolean, interpret this snapshot as imported, default `false`
 - `--schedule-id`: base64 encoded, create snapshot to this schedule, other fields are ignored, default `empty`
+
+Remarks:
+
+- Multiple `--name` and `--uuid` values can be combined together.
+- YSQL keyspace snapshots do not support explicit `--name` and `--uuid` selection.
+- To create a snapshot of an entire keyspace, do not specify any `--name` or `--uuid`. YCQL only.
+- `yedis.*` keyspaces are not supported.
 
 Examples:
 
 - create a snapshot of an entire YSQL `yugabyte` database: `cli create-snapshot --keyspace ysql.yugabyte`
-- create a snapshot of selected YSQL tables in the `yugabyte` database: `cli create-snapshot --keyspace ysql.yugabyte --name table --name another-table`
-- create a snapshot of selected YCQL tables in the `example` database: `cli create-snapshot --keyspace ycql.example --name table --add-indexes`
+- create a snapshot of selected YCQL tables in the `example` database: `cli create-snapshot --keyspace ycql.example --name table`
 
 ##### delete-snapshot
 

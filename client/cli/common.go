@@ -171,7 +171,7 @@ func mapRelationTypeFilter(input string) (ybApi.RelationType, bool) {
 		return ybApi.RelationType_SYSTEM_TABLE_RELATION, true
 	case "user_table":
 		return ybApi.RelationType_USER_TABLE_RELATION, true
-	case "index":
+	case "index_table":
 		return ybApi.RelationType_INDEX_TABLE_RELATION, true
 	default:
 		return -1, false
