@@ -122,6 +122,8 @@ where the command is one of:
 
 - `create-snapshot`: Creates a snapshot of an entire keyspace or selected tables in a keyspace.
 - `delete-snapshot`: Delete a snapshot.
+- `export-snapshot`: Exports a snapshot.
+- `import-snapshot`: Imports a snapshot.
 - `list-snapshots`: List snapshots.
 
 - `create-snapshot-schedule`: Creates a snapshot schedule from an entire keyspace or selected tables in the keyspace.
@@ -262,6 +264,10 @@ Examples:
 - `--snapshot-id`: string, snapshot identifier, default `empty string` (not defined)
 - `--base64-encoded`: boolean, base64 decode given snapshot ID before handling over to the API, default `false`
 - `--file-path`: string, full path to the export file, parent directories must exist, default `empty`
+
+##### import-snapshot
+
+- `--file-path`: string, full path to the exported snapshot file
 
 ##### create-snapshot-schedule
 
