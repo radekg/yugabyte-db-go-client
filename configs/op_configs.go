@@ -471,7 +471,8 @@ func (c *OpSnapshotDeleteScheduleConfig) Validate() error {
 type OpSnapshotDeleteConfig struct {
 	flagBase
 
-	SnapshotID string
+	SnapshotID    string
+	Base64Encoded bool
 }
 
 // NewOpSnapshotDeleteConfig returns an instance of the command specific config.
@@ -483,6 +484,7 @@ func NewOpSnapshotDeleteConfig() *OpSnapshotDeleteConfig {
 func (c *OpSnapshotDeleteConfig) FlagSet() *pflag.FlagSet {
 	if c.initFlagSet() {
 		c.flagSet.StringVar(&c.SnapshotID, "snapshot-id", "", "Snapshot identifier")
+		c.flagSet.BoolVar(&c.Base64Encoded, "base64-encoded", false, "If true, accepts the --snapshot-id as base64 encoded string")
 	}
 	return c.flagSet
 }
@@ -524,6 +526,7 @@ type OpSnapshotListConfig struct {
 	flagBase
 
 	SnapshotID           string
+	Base64Encoded        bool
 	ListDeletedSnapshots bool
 	PrepareForBackup     bool
 }
@@ -537,8 +540,35 @@ func NewOpSnapshotListConfig() *OpSnapshotListConfig {
 func (c *OpSnapshotListConfig) FlagSet() *pflag.FlagSet {
 	if c.initFlagSet() {
 		c.flagSet.StringVar(&c.SnapshotID, "snapshot-id", "", "Snapshot identifier")
+		c.flagSet.BoolVar(&c.Base64Encoded, "base64-encoded", false, "If true, accepts the --snapshot-id as base64 encoded string")
 		c.flagSet.BoolVar(&c.ListDeletedSnapshots, "list-deleted-snapshots", false, "List deleted snapshots")
 		c.flagSet.BoolVar(&c.PrepareForBackup, "prepare-for-backup", false, "Prepare for backup")
+	}
+	return c.flagSet
+}
+
+// ==
+
+// OpSnapshotExportConfig represents a command specific config.
+type OpSnapshotExportConfig struct {
+	flagBase
+
+	SnapshotID    string
+	Base64Encoded bool
+	FilePath      string
+}
+
+// NewOpSnapshotExportConfig returns an instance of the command specific config.
+func NewOpSnapshotExportConfig() *OpSnapshotExportConfig {
+	return &OpSnapshotExportConfig{}
+}
+
+// FlagSet returns an instance of the flag set for the configuration.
+func (c *OpSnapshotExportConfig) FlagSet() *pflag.FlagSet {
+	if c.initFlagSet() {
+		c.flagSet.StringVar(&c.SnapshotID, "snapshot-id", "", "Snapshot identifier")
+		c.flagSet.BoolVar(&c.Base64Encoded, "base64-encoded", false, "If true, accepts the --snapshot-id as base64 encoded string")
+		c.flagSet.StringVar(&c.FilePath, "file-path", "", "Absolute path to the snapshot export file, parent directories must exist")
 	}
 	return c.flagSet
 }
