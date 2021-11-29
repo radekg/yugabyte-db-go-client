@@ -11,8 +11,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-import "C"
-
 // SnapshotExportData contains snapshot file info.
 type SnapshotExportData struct {
 	FilePath string `json:"file_path"`
