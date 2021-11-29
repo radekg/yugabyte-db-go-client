@@ -35,6 +35,7 @@ type YBCliClient interface {
 	SnapshotsImport(*configs.OpSnapshotExportConfig) (*ybApi.ImportSnapshotMetaResponsePB, error)
 	SnapshotsListSchedules(*configs.OpSnapshotListSchedulesConfig) (*ybApi.ListSnapshotSchedulesResponsePB, error)
 	SnapshotsList(*configs.OpSnapshotListConfig) (*ybApi.ListSnapshotsResponsePB, error)
+	SnapshotsRestore(*configs.OpSnapshotRestoreConfig) (*ybApi.RestoreSnapshotResponsePB, error)
 
 	OnConnected() <-chan struct{}
 	OnConnectError() <-chan error

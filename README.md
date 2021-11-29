@@ -125,6 +125,7 @@ where the command is one of:
 - `export-snapshot`: Exports a snapshot.
 - `import-snapshot`: Imports a snapshot.
 - `list-snapshots`: List snapshots.
+- `restore-snapshot`: Restore a snapshot.
 
 - `create-snapshot-schedule`: Creates a snapshot schedule from an entire keyspace or selected tables in the keyspace.
 - `delete-snapshot-schedule`: Delete a snapshot schedule.
@@ -268,6 +269,12 @@ Examples:
 ##### import-snapshot
 
 - `--file-path`: string, full path to the exported snapshot file
+
+##### restore-snapshot
+
+- `--snapshot-id`: string, snapshot identifier, default `empty string` (not defined)
+- `--base64-encoded`: boolean, base64 decode given snapshot ID before handling over to the API, default `false`
+- `--restore-ht-micros`: uint64, absolute Timing Option: Max HybridTime, in micros, default `0` (undefined)
 
 ##### create-snapshot-schedule
 
