@@ -1,4 +1,4 @@
-package cli
+package implementation
 
 import ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 

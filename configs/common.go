@@ -20,7 +20,7 @@ type CliConfig struct {
 	flagBase
 	tlsConfig *tls.Config
 
-	MasterHostPort    string
+	MasterHostPort    []string
 	OpTimeout         time.Duration
 	TLSCaCertFilePath string
 	TLSCertFilePath   string
@@ -35,7 +35,7 @@ func NewCliConfig() *CliConfig {
 // FlagSet returns an instance of the flag set for the configuration.
 func (c *CliConfig) FlagSet() *pflag.FlagSet {
 	if c.initFlagSet() {
-		c.flagSet.StringVar(&c.MasterHostPort, "master", "127.0.0.1:7100", "Master host port")
+		c.flagSet.StringSliceVar(&c.MasterHostPort, "master", []string{"127.0.0.1:7100", "127.0.0.1:7101", "127.0.0.1:7102"}, "Master host port")
 		c.flagSet.DurationVar(&c.OpTimeout, "operation-timeout", time.Duration(time.Second*60), "Operation timeout")
 		c.flagSet.StringVar(&c.TLSCaCertFilePath, "tls-ca-cert-file-path", "", "TLS CA certificate file path")
 		c.flagSet.StringVar(&c.TLSCertFilePath, "tls-cert-file-path", "", "TLS certificate file path")
@@ -77,8 +77,8 @@ func (c *CliConfig) TLSConfig() (*tls.Config, error) {
 
 // Validate validates the correctness of the configuration.
 func (c *CliConfig) Validate() error {
-	if c.MasterHostPort == "" {
-		return fmt.Errorf("--master is required")
+	if len(c.MasterHostPort) == 0 {
+		return fmt.Errorf("at least one --master is required")
 	}
 	if c.TLSCertFilePath != "" && c.TLSKeyFilePath == "" {
 		return fmt.Errorf("both --tls-cert-file-path and --tls-key-file-path are required")
