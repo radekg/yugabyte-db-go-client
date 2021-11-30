@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/radekg/yugabyte-db-go-client/client/cli"
+	"github.com/radekg/yugabyte-db-go-client/client/implementation"
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	"github.com/spf13/cobra"
 )
@@ -49,13 +49,13 @@ func processCommand() int {
 		}
 	}
 
-	cliConfig, cliConfigErr := configs.NewYBClientConfigFromCliConfig(commandConfig)
+	cliConfig, cliConfigErr := configs.NewYBClientConfigFromCliConfig(commandConfig.MasterHostPort[0], commandConfig)
 	if cliConfigErr != nil {
 		logger.Error("failed creating client configuration", "reason", cliConfigErr)
 		return 1
 	}
 	cliConfig.MasterHostPort = fmt.Sprintf("%s:%d", opConfig.Host, opConfig.Port)
-	cliClient, err := cli.NewYBConnectedClient(cliConfig, logger.Named("client"))
+	cliClient, err := implementation.NewYBConnectedClient(cliConfig, logger.Named("client"))
 	if err != nil {
 		// careful: different than other commands:
 		logger.Error("server not reachable", "reason", err)

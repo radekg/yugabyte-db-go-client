@@ -6,7 +6,7 @@ Work in progress. Current state: this can definitely work.
 
 ### Usage
 
-The `github.com/radekg/yugabyte-db-go-client/client/cli` provides a reference client implementation.
+The `github.com/radekg/yugabyte-db-go-client/client/implementation` provides a reference client implementation.
 
 **TL;DR**: here's how to use the API client directly from _go_:
 
@@ -135,7 +135,7 @@ where the command is one of:
 
 Common flags:
 
-- `--master`: host port of the master to query, default `127.0.0.1:7100`
+- `--master`: string, repeated, host port of the master to query, default `127.0.0.1:7100, 127.0.0.1:7101, 127.0.0.1:7102`
 - `--operation-timeout`: RPC operation timeout, duration string (`5s`, `1m`, ...), default `60s`
 - `--tls-ca-cert-file-path`: full path to the CA certificate file, default `empty string`
 - `--tls-cert-file-path`: full path to the certificate file, default `empty string`

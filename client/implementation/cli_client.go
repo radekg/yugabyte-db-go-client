@@ -1,4 +1,4 @@
-package cli
+package implementation
 
 import (
 	"github.com/hashicorp/go-hclog"

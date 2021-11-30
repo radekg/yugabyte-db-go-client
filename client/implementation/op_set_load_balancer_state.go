@@ -1,4 +1,4 @@
-package cli
+package implementation
 
 import (
 	"github.com/radekg/yugabyte-db-go-client/utils"

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/radekg/yugabyte-db-go-client/client/cli"
+	"github.com/radekg/yugabyte-db-go-client/client/implementation"
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	"github.com/spf13/cobra"
 )
@@ -49,23 +49,7 @@ func processCommand() int {
 		}
 	}
 
-	cliConfig, cliConfigErr := configs.NewYBClientConfigFromCliConfig(commandConfig)
-	if cliConfigErr != nil {
-		logger.Error("failed creating client configuration", "reason", cliConfigErr)
-		return 1
-	}
-	cliClient, err := cli.NewYBConnectedClient(cliConfig, logger.Named("client"))
-	if err != nil {
-		logger.Error("failed creating a client", "reason", err)
-		return 1
-	}
-	select {
-	case err := <-cliClient.OnConnectError():
-		logger.Error("failed connecting a client", "reason", err)
-		return 1
-	case <-cliClient.OnConnected():
-		logger.Debug("client connected")
-	}
+	cliClient, err := implementation.MasterLeaderConnectedClient(commandConfig, logger.Named("client"))
 	defer cliClient.Close()
 
 	responsePayload, err := cliClient.SnapshotsCreateSchedule(opConfig)
