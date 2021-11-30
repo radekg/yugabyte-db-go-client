@@ -125,6 +125,7 @@ where the command is one of:
 - `export-snapshot`: Exports a snapshot.
 - `import-snapshot`: Imports a snapshot.
 - `list-snapshots`: List snapshots.
+- `list-snapshot-restorations`: List snapshot restorations.
 - `restore-snapshot`: Restore a snapshot.
 
 - `create-snapshot-schedule`: Creates a snapshot schedule from an entire keyspace or selected tables in the keyspace.
@@ -260,6 +261,12 @@ Examples:
 - `--list-deleted-snapshots`: boolean, list deleted snapshots, default `false`
 - `--prepare-for-backup`: boolean, prepare for backup, default `false`
 
+##### list-snapshot-restorations
+
+- `--schedule-id`: string, snapshot identifier, required, default `empty string` (not defined)
+- `--restoration-id`: string, restoration identifier, required, default `empty string` (not defined)
+- `--base64-encoded`: boolean, base64 decode given snapshot ID before handling over to the API, default `false`
+
 ##### export-snapshot
 
 - `--snapshot-id`: string, snapshot identifier, default `empty string` (not defined)
@@ -294,6 +301,10 @@ Examples:
 - create a snapshot schedule of selected YSQL tables in the `yugabyte` database: `cli create-snapshot-schedule --keyspace ysql.yugabyte --name table --name another-table`
 
 ##### delete-snapshot-schedule
+
+- `--schedule-id`: string, snapshot identifier, required, default `empty string` (not defined)
+
+##### list-snapshot-schedules
 
 - `--schedule-id`: string, snapshot identifier, required, default `empty string` (not defined)
 

@@ -9,7 +9,7 @@ import (
 // Restore snapshot.
 func (c *defaultYBCliClient) SnapshotsRestore(opConfig *configs.OpSnapshotRestoreConfig) (*ybApi.RestoreSnapshotResponsePB, error) {
 
-	givenSnapshotID, err := utils.DecodeSnapshotID(opConfig.SnapshotID, opConfig.Base64Encoded)
+	givenSnapshotID, err := utils.DecodeAsYugabyteID(opConfig.SnapshotID, opConfig.Base64Encoded)
 	if err != nil {
 		c.logger.Error("failed fetching normalized snapshot id",
 			"given-value", opConfig.SnapshotID,
@@ -17,7 +17,7 @@ func (c *defaultYBCliClient) SnapshotsRestore(opConfig *configs.OpSnapshotRestor
 		return nil, err
 	}
 
-	protoSnapshotID, err := utils.StringUUIDToProtoSnapshotID(givenSnapshotID)
+	protoSnapshotID, err := utils.StringUUIDToProtoYugabyteID(givenSnapshotID)
 	if err != nil {
 		return nil, err
 	}

@@ -14,7 +14,7 @@ func (c *defaultYBCliClient) SnapshotsList(opConfig *configs.OpSnapshotListConfi
 	}
 	if len(opConfig.SnapshotID) > 0 {
 
-		givenSnapshotID, err := utils.DecodeSnapshotID(opConfig.SnapshotID, opConfig.Base64Encoded)
+		givenSnapshotID, err := utils.DecodeAsYugabyteID(opConfig.SnapshotID, opConfig.Base64Encoded)
 		if err != nil {
 			c.logger.Error("failed fetching normalized snapshot id",
 				"given-value", opConfig.SnapshotID,
@@ -22,7 +22,7 @@ func (c *defaultYBCliClient) SnapshotsList(opConfig *configs.OpSnapshotListConfi
 			return nil, err
 		}
 
-		protoSnapshotID, err := utils.StringUUIDToProtoSnapshotID(givenSnapshotID)
+		protoSnapshotID, err := utils.StringUUIDToProtoYugabyteID(givenSnapshotID)
 		if err != nil {
 			return nil, err
 		}

@@ -19,7 +19,7 @@ type SnapshotExportData struct {
 // Export snapshot.
 func (c *defaultYBCliClient) SnapshotsExport(opConfig *configs.OpSnapshotExportConfig) (*SnapshotExportData, error) {
 
-	givenSnapshotID, err := utils.DecodeSnapshotID(opConfig.SnapshotID, opConfig.Base64Encoded)
+	givenSnapshotID, err := utils.DecodeAsYugabyteID(opConfig.SnapshotID, opConfig.Base64Encoded)
 	if err != nil {
 		c.logger.Error("failed fetching normalized snapshot id",
 			"given-value", opConfig.SnapshotID,
@@ -27,7 +27,7 @@ func (c *defaultYBCliClient) SnapshotsExport(opConfig *configs.OpSnapshotExportC
 		return nil, err
 	}
 
-	protoSnapshotID, err := utils.StringUUIDToProtoSnapshotID(givenSnapshotID)
+	protoSnapshotID, err := utils.StringUUIDToProtoYugabyteID(givenSnapshotID)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (c *defaultYBCliClient) SnapshotsExport(opConfig *configs.OpSnapshotExportC
 
 	var snapshotExportEntry *ybApi.SnapshotInfoPB
 	for _, snapshotEntry := range responsePayload.Snapshots {
-		stringID, err := utils.ProtoSnapshotIDToString(snapshotEntry.Id)
+		stringID, err := utils.ProtoYugabyteIDToString(snapshotEntry.Id)
 		if err != nil {
 			c.logger.Warn("skipping snapshot, could not parse Id value as string UUID")
 			continue

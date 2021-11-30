@@ -27,6 +27,7 @@ import (
 	snapshotsexport "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/export"
 	snapshotsimport "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/import"
 	snapshotslist "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/list"
+	snapshotslistrestorations "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/listrestorations"
 	snapshotslistschedules "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/listschedules"
 	snapshotsrestore "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/restore"
 
@@ -66,6 +67,7 @@ func init() {
 	rootCmd.AddCommand(snapshotsdelete.Command)
 	rootCmd.AddCommand(snapshotsexport.Command)
 	rootCmd.AddCommand(snapshotsimport.Command)
+	rootCmd.AddCommand(snapshotslistrestorations.Command)
 	rootCmd.AddCommand(snapshotslistschedules.Command)
 	rootCmd.AddCommand(snapshotslist.Command)
 	rootCmd.AddCommand(snapshotsrestore.Command)

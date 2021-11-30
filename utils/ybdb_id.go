@@ -6,15 +6,15 @@ import (
 	"github.com/google/uuid"
 )
 
-// SnapshotID returns a snapshot ID or an error.
-func DecodeSnapshotID(input string, base64Encoded bool) (string, error) {
+// DecodeAsYugabyteID returns a snapshot ID or an error.
+func DecodeAsYugabyteID(input string, base64Encoded bool) (string, error) {
 	givenSnapshotID := input
 	if base64Encoded {
 		decoded, err := base64.StdEncoding.DecodeString(givenSnapshotID)
 		if err != nil {
 			return "", err
 		}
-		protoReadySnapshotID, err := ProtoSnapshotIDToString(decoded)
+		protoReadySnapshotID, err := ProtoYugabyteIDToString(decoded)
 		if err != nil {
 			return "", err
 		}
@@ -23,8 +23,8 @@ func DecodeSnapshotID(input string, base64Encoded bool) (string, error) {
 	return givenSnapshotID, nil
 }
 
-// ProtoSnapshotIDToString converts the spanshot id represented as bytes to a string UUID.
-func ProtoSnapshotIDToString(input []byte) (string, error) {
+// ProtoYugabyteIDToString converts the spanshot id represented as bytes to a string UUID.
+func ProtoYugabyteIDToString(input []byte) (string, error) {
 	aUUID := uuid.New()
 	if err := aUUID.UnmarshalBinary(input); err != nil {
 		return "", err
@@ -32,8 +32,8 @@ func ProtoSnapshotIDToString(input []byte) (string, error) {
 	return aUUID.String(), nil
 }
 
-// StringUUIDToProtoSnapshotID converts a string UUID to the snapshot ID bytes for protobuf operations.
-func StringUUIDToProtoSnapshotID(input string) ([]byte, error) {
+// StringUUIDToProtoYugabyteID converts a string UUID to the snapshot ID bytes for protobuf operations.
+func StringUUIDToProtoYugabyteID(input string) ([]byte, error) {
 	aUUID, err := uuid.Parse(input)
 	if err != nil {
 		return []byte{}, err
