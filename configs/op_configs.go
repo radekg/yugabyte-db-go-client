@@ -553,12 +553,13 @@ func (c *OpSnapshotListConfig) FlagSet() *pflag.FlagSet {
 type OpSnapshotExportConfig struct {
 	flagBase
 
+	Keyspace      string
 	SnapshotID    string
 	Base64Encoded bool
 	FilePath      string
 }
 
-// NewOpSnapshotExportConfig returns an instance of the command specific config.
+// NewOpSnapshotConfig returns an instance of the command specific config.
 func NewOpSnapshotExportConfig() *OpSnapshotExportConfig {
 	return &OpSnapshotExportConfig{}
 }
@@ -566,9 +567,34 @@ func NewOpSnapshotExportConfig() *OpSnapshotExportConfig {
 // FlagSet returns an instance of the flag set for the configuration.
 func (c *OpSnapshotExportConfig) FlagSet() *pflag.FlagSet {
 	if c.initFlagSet() {
+		c.flagSet.StringVar(&c.Keyspace, "keyspace", "", "Keyspace for the tables in this create request")
 		c.flagSet.StringVar(&c.SnapshotID, "snapshot-id", "", "Snapshot identifier")
 		c.flagSet.BoolVar(&c.Base64Encoded, "base64-encoded", false, "If true, accepts the --snapshot-id as base64 encoded string")
 		c.flagSet.StringVar(&c.FilePath, "file-path", "", "Absolute path to the snapshot export file, parent directories must exist")
+	}
+	return c.flagSet
+}
+
+// OpSnapshotImportConfig represents a command specific config.
+type OpSnapshotImportConfig struct {
+	flagBase
+
+	FilePath  string
+	Keyspace  string
+	TableName []string
+}
+
+// NewOpSnapshotImportConfig returns an instance of the command specific config.
+func NewOpSnapshotImportConfig() *OpSnapshotImportConfig {
+	return &OpSnapshotImportConfig{}
+}
+
+// FlagSet returns an instance of the flag set for the configuration.
+func (c *OpSnapshotImportConfig) FlagSet() *pflag.FlagSet {
+	if c.initFlagSet() {
+		c.flagSet.StringVar(&c.FilePath, "file-path", "", "Absolute path to the snapshot export file, parent directories must exist")
+		c.flagSet.StringVar(&c.Keyspace, "keyspace", "", "The name of the database or keyspace; YCQL only")
+		c.flagSet.StringSliceVar(&c.TableName, "table-name", []string{}, "The name of the table; YCQL only")
 	}
 	return c.flagSet
 }
