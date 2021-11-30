@@ -269,6 +269,8 @@ Examples:
 ##### import-snapshot
 
 - `--file-path`: string, full path to the exported snapshot file
+- `--keyspace`: string, fully qualified keyspace name, for example `ycql.system_namespace`, no effect for YSQL imports, default `empty`
+- `--table-name`: string, repeated, table name to import, no effect for YSQL snapshots, default `empty list`
 
 ##### restore-snapshot
 
