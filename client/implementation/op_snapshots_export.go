@@ -8,7 +8,6 @@ import (
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	"github.com/radekg/yugabyte-db-go-client/utils"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
-	"google.golang.org/protobuf/proto"
 )
 
 // SnapshotExportData contains snapshot file info.
@@ -20,7 +19,7 @@ type SnapshotExportData struct {
 // Export snapshot.
 func (c *defaultYBCliClient) SnapshotsExport(opConfig *configs.OpSnapshotExportConfig) (*SnapshotExportData, error) {
 
-	givenSnapshotID, err := utils.SnapshotID(opConfig.SnapshotID, opConfig.Base64Encoded)
+	givenSnapshotID, err := utils.DecodeSnapshotID(opConfig.SnapshotID, opConfig.Base64Encoded)
 	if err != nil {
 		c.logger.Error("failed fetching normalized snapshot id",
 			"given-value", opConfig.SnapshotID,
@@ -68,7 +67,7 @@ func (c *defaultYBCliClient) SnapshotsExport(opConfig *configs.OpSnapshotExportC
 		return nil, fmt.Errorf("Snapshot '%s' not found", givenSnapshotID)
 	}
 
-	bys, err := proto.Marshal(snapshotExportEntry)
+	bys, err := utils.SerializeProto(snapshotExportEntry)
 	if err != nil {
 		return nil, err
 	}

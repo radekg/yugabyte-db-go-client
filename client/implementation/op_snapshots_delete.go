@@ -9,7 +9,7 @@ import (
 // Delete snapshot.
 func (c *defaultYBCliClient) SnapshotsDelete(opConfig *configs.OpSnapshotDeleteConfig) (*ybApi.DeleteSnapshotResponsePB, error) {
 
-	givenSnapshotID, err := utils.SnapshotID(opConfig.SnapshotID, opConfig.Base64Encoded)
+	givenSnapshotID, err := utils.DecodeSnapshotID(opConfig.SnapshotID, opConfig.Base64Encoded)
 	if err != nil {
 		c.logger.Error("failed fetching normalized snapshot id",
 			"given-value", opConfig.SnapshotID,

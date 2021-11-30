@@ -7,7 +7,7 @@ import (
 )
 
 // SnapshotID returns a snapshot ID or an error.
-func SnapshotID(input string, base64Encoded bool) (string, error) {
+func DecodeSnapshotID(input string, base64Encoded bool) (string, error) {
 	givenSnapshotID := input
 	if base64Encoded {
 		decoded, err := base64.StdEncoding.DecodeString(givenSnapshotID)

@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/radekg/yugabyte-db-go-client/configs"
+	"github.com/radekg/yugabyte-db-go-client/utils"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
-	"google.golang.org/protobuf/proto"
 )
 
 type ybTableName struct {
@@ -71,7 +71,7 @@ func (c *defaultYBCliClient) SnapshotsImport(opConfig *configs.OpSnapshotImportC
 	}
 
 	snapshotInfo := &ybApi.SnapshotInfoPB{}
-	if err := proto.Unmarshal(rawProtoBytes, snapshotInfo); err != nil {
+	if err := utils.DeserializeProto(rawProtoBytes, snapshotInfo); err != nil {
 		return nil, err
 	}
 
@@ -89,13 +89,13 @@ func (c *defaultYBCliClient) SnapshotsImport(opConfig *configs.OpSnapshotImportC
 		case ybApi.SysRowEntry_NAMESPACE:
 
 			meta := &ybApi.SysNamespaceEntryPB{}
-			if err := proto.Unmarshal(sysRowEntry.Data, meta); err != nil {
+			if err := utils.DeserializeProto(sysRowEntry.Data, meta); err != nil {
 				return nil, err
 			}
 
 			if givenKeyspace != "" && givenKeyspace != string(meta.Name) {
 				meta.Name = []byte(givenKeyspace)
-				metaBytes, err := proto.Marshal(meta)
+				metaBytes, err := utils.SerializeProto(meta)
 				if err != nil {
 					return nil, err
 				}
@@ -108,7 +108,7 @@ func (c *defaultYBCliClient) SnapshotsImport(opConfig *configs.OpSnapshotImportC
 				return nil, fmt.Errorf("there is no name for table (including indexes) number: %d", tableIndex)
 			}
 			meta := &ybApi.SysTablesEntryPB{}
-			if err := proto.Unmarshal(sysRowEntry.Data, meta); err != nil {
+			if err := utils.DeserializeProto(sysRowEntry.Data, meta); err != nil {
 				return nil, err
 			}
 			updateMeta := false
@@ -125,7 +125,7 @@ func (c *defaultYBCliClient) SnapshotsImport(opConfig *configs.OpSnapshotImportC
 				return nil, fmt.Errorf("could not find table name from snapshot metadata")
 			}
 			if updateMeta {
-				metaBytes, err := proto.Marshal(meta)
+				metaBytes, err := utils.SerializeProto(meta)
 				if err != nil {
 					return nil, err
 				}

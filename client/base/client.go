@@ -11,7 +11,6 @@ import (
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	"github.com/radekg/yugabyte-db-go-client/utils"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -229,7 +228,7 @@ func (c *ybDefaultConnectedClient) readResponseInto(reader *bytes.Buffer, m prot
 	}
 
 	responseHeader := &ybApi.ResponseHeader{}
-	protoErr := proto.Unmarshal(responseHeaderBuf, responseHeader)
+	protoErr := utils.DeserializeProto(responseHeaderBuf, responseHeader)
 	if protoErr != nil {
 		opLogger.Error("failed unmarshalling response header", "reason", err)
 		return err
@@ -301,7 +300,7 @@ func (c *ybDefaultConnectedClient) readResponseInto(reader *bytes.Buffer, m prot
 		}
 	}
 
-	protoErr2 := proto.Unmarshal(responsePayloadBuf, m)
+	protoErr2 := utils.DeserializeProto(responsePayloadBuf, m)
 	if protoErr2 != nil {
 		opLogger.Error("failed unmarshalling response payload", "reason", protoErr2, "consumed-data", string(responsePayloadBuf))
 		return err
