@@ -14,6 +14,11 @@ import (
 	"github.com/spf13/pflag"
 )
 
+var (
+	supportedNamespaceType = []string{"ycql", "ysql", "yedis"}
+	supportedRelationType  = []string{"system_table", "user_table", "index_table"}
+)
+
 // CliConfig represents the shared CLI config.
 type CliConfig struct {
 	sync.Mutex
