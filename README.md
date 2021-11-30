@@ -314,3 +314,22 @@ To restart:
 docker compose -f yugabytedb-minimal.yml rm
 docker compose -f yugabytedb-minimal.yml up
 ```
+
+## Docker image
+
+Build the Docker image:
+
+```sh
+make docker-image
+```
+
+Run against the provided minimal YugabyteDB cluster:
+
+```sh
+docker run --rm \
+    --net yb-client-minimal \
+    -ti local/ybdb-go-cli:0.0.1 \
+    list-masters --master yb-master-1:7100 \
+                 --master yb-master-2:7100 \
+                 --master yb-master-3:7100
+```

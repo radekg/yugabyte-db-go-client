@@ -50,6 +50,10 @@ func processCommand() int {
 	}
 
 	cliClient, err := implementation.MasterLeaderConnectedClient(commandConfig, logger.Named("client"))
+	if err != nil {
+		logger.Error("could not connect to a leader master", "reason", err)
+		return 1
+	}
 	defer cliClient.Close()
 
 	responsePayload, err := cliClient.ListTables(opConfig)
