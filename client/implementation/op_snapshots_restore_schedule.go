@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/radekg/yugabyte-db-go-client/configs"
-	"github.com/radekg/yugabyte-db-go-client/utils/restoretarget"
+	"github.com/radekg/yugabyte-db-go-client/utils/relativetime"
 	"github.com/radekg/yugabyte-db-go-client/utils/ybdbid"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
@@ -13,7 +13,7 @@ import (
 // Restore schedule.
 func (c *defaultYBCliClient) SnapshotsRestoreSchedule(opConfig *configs.OpSnapshotRestoreScheduleConfig) (*ybApi.RestoreSnapshotResponsePB, error) {
 
-	restoreAt, err := restoretarget.RelativeOrFixedPastWithFallback(opConfig.RestoreAt,
+	restoreAt, err := relativetime.RelativeOrFixedPastWithFallback(opConfig.RestoreAt,
 		opConfig.RestoreRelative,
 		c.defaultServerClockResolver)
 	if err != nil {

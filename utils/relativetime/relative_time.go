@@ -1,4 +1,4 @@
-package restoretarget
+package relativetime
 
 import (
 	"time"

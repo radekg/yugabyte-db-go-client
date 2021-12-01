@@ -3,7 +3,7 @@ package implementation
 import (
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	"github.com/radekg/yugabyte-db-go-client/utils"
-	"github.com/radekg/yugabyte-db-go-client/utils/restoretarget"
+	"github.com/radekg/yugabyte-db-go-client/utils/relativetime"
 	"github.com/radekg/yugabyte-db-go-client/utils/ybdbid"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
@@ -23,7 +23,7 @@ func (c *defaultYBCliClient) SnapshotsRestore(opConfig *configs.OpSnapshotRestor
 		SnapshotId: ybDbID.Bytes(),
 	}
 
-	relativeTime, err := restoretarget.RelativeOrFixedPast(opConfig.RestoreAt,
+	relativeTime, err := relativetime.RelativeOrFixedPast(opConfig.RestoreAt,
 		opConfig.RestoreRelative,
 		c.defaultServerClockResolver)
 	if err != nil {
