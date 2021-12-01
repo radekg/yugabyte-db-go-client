@@ -1,10 +1,9 @@
 package implementation
 
 import (
-	"fmt"
-
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	"github.com/radekg/yugabyte-db-go-client/utils"
+	"github.com/radekg/yugabyte-db-go-client/utils/restoretarget"
 	"github.com/radekg/yugabyte-db-go-client/utils/ybdbid"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
@@ -24,19 +23,15 @@ func (c *defaultYBCliClient) SnapshotsRestore(opConfig *configs.OpSnapshotRestor
 		SnapshotId: ybDbID.Bytes(),
 	}
 
-	if opConfig.RestoreAt > 0 {
-		payload.RestoreHt = &opConfig.RestoreAt
+	relativeTime, err := restoretarget.RelativeOrFixedPast(opConfig.RestoreAt,
+		opConfig.RestoreRelative,
+		c.defaultServerClockResolver)
+	if err != nil {
+		c.logger.Error("failed resolving restore target time", "reason", err)
+		return nil, err
 	}
-	if opConfig.RestoreRelative > 0 {
-		serverClock, err := c.ServerClock()
-		if err != nil {
-			return nil, err
-		}
-		if serverClock.HybridTime == nil {
-			return nil, fmt.Errorf("no hybrid time in server clock response")
-		}
-		newHybridTime := *serverClock.HybridTime - utils.ClockTimestampToHTTimestamp(uint64(opConfig.RestoreRelative.Microseconds()))
-		payload.RestoreHt = &newHybridTime
+	if relativeTime > 0 {
+		payload.RestoreHt = utils.PUint64(relativeTime)
 	}
 
 	responsePayload := &ybApi.RestoreSnapshotResponsePB{}

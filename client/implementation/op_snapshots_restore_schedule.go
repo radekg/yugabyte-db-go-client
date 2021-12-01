@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/radekg/yugabyte-db-go-client/configs"
-	"github.com/radekg/yugabyte-db-go-client/utils"
+	"github.com/radekg/yugabyte-db-go-client/utils/restoretarget"
 	"github.com/radekg/yugabyte-db-go-client/utils/ybdbid"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
@@ -13,7 +13,9 @@ import (
 // Restore schedule.
 func (c *defaultYBCliClient) SnapshotsRestoreSchedule(opConfig *configs.OpSnapshotRestoreScheduleConfig) (*ybApi.RestoreSnapshotResponsePB, error) {
 
-	restoreAt, err := getRestoreScheduleAt(c, opConfig)
+	restoreAt, err := restoretarget.RelativeOrFixedPastWithFallback(opConfig.RestoreAt,
+		opConfig.RestoreRelative,
+		c.defaultServerClockResolver)
 	if err != nil {
 		return nil, fmt.Errorf("could not establish restore at time")
 	}
@@ -174,35 +176,4 @@ func (c *defaultYBCliClient) snapshotSuitableForRestoreAt(entry *ybApi.SysSnapsh
 		return *entry.SnapshotHybridTime >= restoreAt && *entry.PreviousSnapshotHybridTime < restoreAt
 	}
 	return false
-}
-
-func getRestoreScheduleAt(c *defaultYBCliClient, opConfig *configs.OpSnapshotRestoreScheduleConfig) (uint64, error) {
-
-	restoreAt := uint64(0)
-
-	if opConfig.RestoreAt > 0 {
-		restoreAt = opConfig.RestoreAt
-	}
-
-	if opConfig.RestoreRelative > 0 {
-		serverClock, err := c.ServerClock()
-		if err != nil {
-			return 0, err
-		}
-		if serverClock.HybridTime == nil {
-			return 0, fmt.Errorf("no hybrid time in server clock response")
-		}
-		restoreAt = *serverClock.HybridTime - utils.ClockTimestampToHTTimestamp(uint64(opConfig.RestoreRelative.Microseconds()))
-		return restoreAt, nil
-	}
-
-	serverClock, err := c.ServerClock()
-	if err != nil {
-		return 0, err
-	}
-	if serverClock.HybridTime == nil {
-		return 0, fmt.Errorf("no hybrid time in server clock response")
-	}
-	return *serverClock.HybridTime, nil
-
 }
