@@ -1,12 +1,14 @@
 package implementation
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
 
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	"github.com/radekg/yugabyte-db-go-client/utils"
+	"github.com/radekg/yugabyte-db-go-client/utils/ybdbid"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
 
@@ -19,16 +21,11 @@ type SnapshotExportData struct {
 // Export snapshot.
 func (c *defaultYBCliClient) SnapshotsExport(opConfig *configs.OpSnapshotExportConfig) (*SnapshotExportData, error) {
 
-	givenSnapshotID, err := utils.DecodeAsYugabyteID(opConfig.SnapshotID, opConfig.Base64Encoded)
+	ybDbID, err := ybdbid.TryParseFromString(opConfig.SnapshotID)
 	if err != nil {
-		c.logger.Error("failed fetching normalized snapshot id",
-			"given-value", opConfig.SnapshotID,
+		c.logger.Error("given snapshot id is not valid",
+			"original-value", opConfig.SnapshotID,
 			"reason", err)
-		return nil, err
-	}
-
-	protoSnapshotID, err := utils.StringUUIDToProtoYugabyteID(givenSnapshotID)
-	if err != nil {
 		return nil, err
 	}
 
@@ -37,7 +34,7 @@ func (c *defaultYBCliClient) SnapshotsExport(opConfig *configs.OpSnapshotExportC
 			v := true
 			return &v
 		}(),
-		SnapshotId: protoSnapshotID,
+		SnapshotId: ybDbID.Bytes(),
 	}
 	responsePayload := &ybApi.ListSnapshotsResponsePB{}
 	if err := c.connectedClient.Execute(payload, responsePayload); err != nil {
@@ -46,25 +43,20 @@ func (c *defaultYBCliClient) SnapshotsExport(opConfig *configs.OpSnapshotExportC
 
 	if len(responsePayload.Snapshots) > 1 {
 		c.logger.Warn("too many snapshots returned, expected at  most 1",
-			"snapshot-id", givenSnapshotID,
+			"snapshot-id", ybDbID.String(),
 			"found", len(responsePayload.Snapshots))
 	}
 
 	var snapshotExportEntry *ybApi.SnapshotInfoPB
-	for _, snapshotEntry := range responsePayload.Snapshots {
-		stringID, err := utils.ProtoYugabyteIDToString(snapshotEntry.Id)
-		if err != nil {
-			c.logger.Warn("skipping snapshot, could not parse Id value as string UUID")
-			continue
-		}
-		if stringID == givenSnapshotID {
-			snapshotExportEntry = snapshotEntry
+	for _, snapshotInfoEntry := range responsePayload.Snapshots {
+		if bytes.Compare(ybDbID.Bytes(), snapshotInfoEntry.Id) == 0 {
+			snapshotExportEntry = snapshotInfoEntry
 			break
 		}
 	}
 
 	if snapshotExportEntry == nil {
-		return nil, fmt.Errorf("Snapshot '%s' not found", givenSnapshotID)
+		return nil, fmt.Errorf("Snapshot '%s' not found", ybDbID.String())
 	}
 
 	bys, err := utils.SerializeProto(snapshotExportEntry)

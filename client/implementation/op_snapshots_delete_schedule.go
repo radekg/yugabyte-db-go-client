@@ -2,28 +2,23 @@ package implementation
 
 import (
 	"github.com/radekg/yugabyte-db-go-client/configs"
-	"github.com/radekg/yugabyte-db-go-client/utils"
+	"github.com/radekg/yugabyte-db-go-client/utils/ybdbid"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
 
 // Delete snapshot.
 func (c *defaultYBCliClient) SnapshotsDeleteSchedule(opConfig *configs.OpSnapshotDeleteScheduleConfig) (*ybApi.DeleteSnapshotScheduleResponsePB, error) {
 
-	decodedScheduleID, err := utils.DecodeAsYugabyteID(opConfig.ScheduleID, opConfig.Base64Encoded)
+	ybDbID, err := ybdbid.TryParseFromString(opConfig.ScheduleID)
 	if err != nil {
-		c.logger.Error("failed fetching normalized schedule id",
-			"given-value", opConfig.ScheduleID,
+		c.logger.Error("given schedule id is not valid",
+			"original-value", opConfig.ScheduleID,
 			"reason", err)
 		return nil, err
 	}
 
-	protoID, err := utils.StringUUIDToProtoYugabyteID(decodedScheduleID)
-	if err != nil {
-		return nil, err
-	}
-
 	payload := &ybApi.DeleteSnapshotScheduleRequestPB{
-		SnapshotScheduleId: protoID,
+		SnapshotScheduleId: ybDbID.Bytes(),
 	}
 	responsePayload := &ybApi.DeleteSnapshotScheduleResponsePB{}
 	if err := c.connectedClient.Execute(payload, responsePayload); err != nil {
