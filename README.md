@@ -115,6 +115,17 @@ Logging flags:
 - `--log-color`: log colored output, default `false`
 - `--log-force-color`: force colored output, default `false`
 
+### Commands
+
+- [Universe and cluster commands](https://github.com/radekg/yugabyte-db-go-client#universe-and-cluster-commands)
+- [Table commands](https://github.com/radekg/yugabyte-db-go-client#table-commands)
+- [Backup and snapshot commands](https://github.com/radekg/yugabyte-db-go-client#backup-and-snapshot-commands)
+- [Multi-zone and multi-region deployment commands](https://github.com/radekg/yugabyte-db-go-client#multi-zone-and-multi-region-deployment-commands)
+- [Change data capture (CDC) commands](https://github.com/radekg/yugabyte-db-go-client#change-data-capture-cdc-commands)
+- [Decommissioning commands](https://github.com/radekg/yugabyte-db-go-client#decommissioning-commands)
+- [Rebalancing commands](https://github.com/radekg/yugabyte-db-go-client#rebalancing-commands)
+- [Other commands](https://github.com/radekg/yugabyte-db-go-client#other-commands)
+
 ### Universe and cluster commands
 
 #### get-universe-config
