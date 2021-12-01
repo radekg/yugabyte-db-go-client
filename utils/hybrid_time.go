@@ -19,3 +19,10 @@ func HTTimestampToPhysicalAndLogical(htTimestamp uint64) []uint64 {
 	logicalValues := htTimestamp & uint64(hybridTimeLogicalBitsMask)
 	return []uint64{timestampInMicros, logicalValues}
 }
+
+// PhysicalAndLogicalToHTTimestamp encodes separate physical and logical
+// components into a single HT timestamp.
+// https://github.com/yugabyte/yugabyte-db/blob/master/java/yb-client/src/main/java/org/yb/util/HybridTimeUtil.java#L82
+func PhysicalAndLogicalToHTTimestamp(physical uint64, logical uint64) uint64 {
+	return (physical << uint64(hybridTimeNumBitsToShift)) + logical
+}
