@@ -1,6 +1,8 @@
 package implementation
 
 import (
+	"fmt"
+
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
@@ -40,12 +42,14 @@ func (c *defaultYBCliClient) SnapshotsCreateSchedule(opConfig *configs.OpSnapsho
 		payload.Options.DeleteTime = &opConfig.DeleteTime
 	}
 	if opConfig.DeleteAfter > 0 {
-		payloadHybridTime := &ybApi.ServerClockRequestPB{}
-		responseHybridTimePayload := &ybApi.ServerClockResponsePB{}
-		if err := c.connectedClient.Execute(payloadHybridTime, responseHybridTimePayload); err != nil {
+		serverClock, err := c.ServerClock()
+		if err != nil {
 			return nil, err
 		}
-		newHybridTime := *responseHybridTimePayload.HybridTime + uint64(opConfig.DeleteAfter.Seconds())
+		if serverClock.HybridTime == nil {
+			return nil, fmt.Errorf("no hybrid time in server clock response")
+		}
+		newHybridTime := *serverClock.HybridTime + uint64(opConfig.DeleteAfter.Microseconds())
 		payload.Options.DeleteTime = &newHybridTime
 	}
 

@@ -27,6 +27,8 @@ type YBCliClient interface {
 	Ping() (*ybApi.PingResponsePB, error)
 	SetLoadBalancerState(bool) (*ybApi.ChangeLoadBalancerStateResponsePB, error)
 
+	ServerClock() (*ybApi.ServerClockResponsePB, error)
+
 	SnapshotsCreateSchedule(*configs.OpSnapshotCreateScheduleConfig) (*ybApi.CreateSnapshotScheduleResponsePB, error)
 	SnapshotsCreate(*configs.OpSnapshotCreateConfig) (*ybApi.CreateSnapshotResponsePB, error)
 	SnapshotsDeleteSchedule(*configs.OpSnapshotDeleteScheduleConfig) (*ybApi.DeleteSnapshotScheduleResponsePB, error)
@@ -36,6 +38,7 @@ type YBCliClient interface {
 	SnapshotsListSchedules(*configs.OpSnapshotListSchedulesConfig) (*ybApi.ListSnapshotSchedulesResponsePB, error)
 	SnapshotsListRestorations(*configs.OpSnapshotListRestorationsConfig) (*ybApi.ListSnapshotRestorationsResponsePB, error)
 	SnapshotsList(*configs.OpSnapshotListConfig) (*ybApi.ListSnapshotsResponsePB, error)
+	SnapshotsRestoreSchedule(*configs.OpSnapshotRestoreScheduleConfig) (*ybApi.RestoreSnapshotResponsePB, error)
 	SnapshotsRestore(*configs.OpSnapshotRestoreConfig) (*ybApi.RestoreSnapshotResponsePB, error)
 
 	OnConnected() <-chan struct{}

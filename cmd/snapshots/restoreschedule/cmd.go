@@ -1,4 +1,4 @@
-package snapshotsrestore
+package snapshotsrestoreschedule
 
 import (
 	"encoding/json"
@@ -12,8 +12,8 @@ import (
 
 // Command is the command declaration.
 var Command = &cobra.Command{
-	Use:   "restore-snapshot",
-	Short: "Restore snapshot",
+	Use:   "restore-snapshot-schedule",
+	Short: "Restore snapshot schedule",
 	Run:   run,
 	Long:  ``,
 }
@@ -21,7 +21,7 @@ var Command = &cobra.Command{
 var (
 	commandConfig = configs.NewCliConfig()
 	logConfig     = configs.NewLogginConfig()
-	opConfig      = configs.NewOpSnapshotRestoreConfig()
+	opConfig      = configs.NewOpSnapshotRestoreScheduleConfig()
 )
 
 func initFlags() {
@@ -40,7 +40,7 @@ func run(cobraCommand *cobra.Command, _ []string) {
 
 func processCommand() int {
 
-	logger := logConfig.NewLogger("restore-snapshot")
+	logger := logConfig.NewLogger("restore-snapshot-schedule")
 
 	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig, opConfig} {
 		if err := validatingConfig.Validate(); err != nil {
@@ -56,7 +56,7 @@ func processCommand() int {
 	}
 	defer cliClient.Close()
 
-	responsePayload, err := cliClient.SnapshotsRestore(opConfig)
+	responsePayload, err := cliClient.SnapshotsRestoreSchedule(opConfig)
 	if err != nil {
 		logger.Error("failed restoring snapshot", "reason", err)
 		return 1
