@@ -32,6 +32,8 @@ import (
 	snapshotsrestore "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/restore"
 	snapshotsrestoreschedule "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/restoreschedule"
 
+	"github.com/radekg/yugabyte-db-go-client/cmd/ysqlcatalogversion"
+
 	"github.com/spf13/cobra"
 )
 
@@ -73,6 +75,8 @@ func init() {
 	rootCmd.AddCommand(snapshotslist.Command)
 	rootCmd.AddCommand(snapshotsrestoreschedule.Command)
 	rootCmd.AddCommand(snapshotsrestore.Command)
+
+	rootCmd.AddCommand(ysqlcatalogversion.Command)
 }
 
 func main() {
