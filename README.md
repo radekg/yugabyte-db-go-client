@@ -123,11 +123,11 @@ Get the placement info and blacklist info of the universe.
 
 #### change-config
 
-TODO.
+TODO: [track](https://github.com/radekg/yugabyte-db-go-client/issues/2).
 
 #### change-master-config
 
-TODO.
+TODO: [track](https://github.com/radekg/yugabyte-db-go-client/issues/35).
 
 #### list-tablet-servers
 
@@ -141,19 +141,19 @@ List all the masters in this database.
 
 #### list-replica-type-counts
 
-TODO.
+TODO: [track](https://github.com/radekg/yugabyte-db-go-client/issues/30).
 
 #### dump-masters-state
 
-TODO.
+TODO: [track](https://github.com/radekg/yugabyte-db-go-client/issues/36).
 
 #### list-tablets-for-table-server
 
-TODO.
+TODO: [track](https://github.com/radekg/yugabyte-db-go-client/issues/37).
 
 #### split-tablet
 
-TODO.
+TODO: [track](https://github.com/radekg/yugabyte-db-go-client/issues/52).
 
 #### master-leader-stepdown
 
@@ -186,11 +186,11 @@ Examples:
 
 #### compact-table
 
-TODO.
+TODO: requires an issue.
 
 #### modify-table-placement-info
 
-TODO.
+TODO: requires an issue.
 
 ### Backup and snapshot commands
 
@@ -308,7 +308,33 @@ Sets the preferred availability zones (AZs) and regions.
 
 - `--zone-info`: string, repeated, specifies the cloud, region, and zone, default `empty`
 
+### Change data capture (CDC) commands
+
+#### create-cdc-stream
+
+TODO: [track](https://github.com/radekg/yugabyte-db-go-client/issues/44).
+
+#### delete-cdc-stream
+
+TODO: [track](https://github.com/radekg/yugabyte-db-go-client/issues/46).
+
+#### list-cdc-streams
+
+TODO: [track](https://github.com/radekg/yugabyte-db-go-client/issues/45).
+
 ### Decommissioning commands
+
+#### get-leader-blacklist-completion
+
+TODO: [track](https://github.com/radekg/yugabyte-db-go-client/issues/41).
+
+#### change-blacklist
+
+TODO: [track](https://github.com/radekg/yugabyte-db-go-client/issues/1).
+
+#### change-leader-blacklist
+
+TODO: [track](https://github.com/radekg/yugabyte-db-go-client/issues/42).
 
 #### leader-stepdown
 
