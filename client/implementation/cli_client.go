@@ -27,6 +27,7 @@ type YBCliClient interface {
 	MasterLeaderStepDown() (*ybApi.GetMasterRegistrationResponsePB, error)
 	Ping() (*ybApi.PingResponsePB, error)
 	SetLoadBalancerState(bool) (*ybApi.ChangeLoadBalancerStateResponsePB, error)
+	SetPreferredZones(*configs.OpSetPreferredZonesConfig) (*ybApi.SetPreferredZonesResponsePB, error)
 
 	ServerClock() (*ybApi.ServerClockResponsePB, error)
 

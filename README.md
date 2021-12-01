@@ -117,6 +117,7 @@ where the command is one of:
 - `master-leader-step-down`: Try to force the current master leader to step down.
 - `ping`: Ping a certain YB server.
 - `set-load-balancer-state`: Set the load balancer state.
+- `set-preferred-zones`: Sets the preferred availability zones (AZs) and regions.
 - `ysql-catalog-version`: Fetch current YSQL catalog version.
 
 #### Snapshot commands
@@ -229,6 +230,10 @@ Options are mutually exclusive, exactly one has to be set:
 
 - `--enabled`: boolean, default `false`, new desired state: enabled
 - `--disabled`: boolean, default `false`, new desired state: disabled
+
+#### set-preferred-zones
+
+- `--zone-info`: string, repeated, specifies the cloud, region, and zone, default `empty`
 
 #### Snapshot commands
 

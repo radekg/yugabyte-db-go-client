@@ -20,6 +20,7 @@ import (
 	"github.com/radekg/yugabyte-db-go-client/cmd/masterleaderstepdown"
 	"github.com/radekg/yugabyte-db-go-client/cmd/ping"
 	"github.com/radekg/yugabyte-db-go-client/cmd/setloadbalancerstate"
+	"github.com/radekg/yugabyte-db-go-client/cmd/setpreferredzones"
 
 	snapshotscreate "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/create"
 	snapshotscreateschedule "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/createschedule"
@@ -65,6 +66,7 @@ func init() {
 	rootCmd.AddCommand(masterleaderstepdown.Command)
 	rootCmd.AddCommand(ping.Command)
 	rootCmd.AddCommand(setloadbalancerstate.Command)
+	rootCmd.AddCommand(setpreferredzones.Command)
 
 	rootCmd.AddCommand(snapshotscreateschedule.Command)
 	rootCmd.AddCommand(snapshotscreate.Command)
