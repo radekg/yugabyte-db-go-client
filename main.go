@@ -18,6 +18,7 @@ import (
 	"github.com/radekg/yugabyte-db-go-client/cmd/listtables"
 	"github.com/radekg/yugabyte-db-go-client/cmd/listtabletservers"
 	"github.com/radekg/yugabyte-db-go-client/cmd/masterleaderstepdown"
+	"github.com/radekg/yugabyte-db-go-client/cmd/modifyplacementinfo"
 	"github.com/radekg/yugabyte-db-go-client/cmd/ping"
 	"github.com/radekg/yugabyte-db-go-client/cmd/setloadbalancerstate"
 	"github.com/radekg/yugabyte-db-go-client/cmd/setpreferredzones"
@@ -64,6 +65,7 @@ func init() {
 	rootCmd.AddCommand(listtables.Command)
 	rootCmd.AddCommand(listtabletservers.Command)
 	rootCmd.AddCommand(masterleaderstepdown.Command)
+	rootCmd.AddCommand(modifyplacementinfo.Command)
 	rootCmd.AddCommand(ping.Command)
 	rootCmd.AddCommand(setloadbalancerstate.Command)
 	rootCmd.AddCommand(setpreferredzones.Command)

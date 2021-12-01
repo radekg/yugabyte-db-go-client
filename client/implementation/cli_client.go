@@ -25,6 +25,7 @@ type YBCliClient interface {
 	ListTables(*configs.OpListTablesConfig) (*ybApi.ListTablesResponsePB, error)
 	ListTabletServers(*configs.OpListTabletServersConfig) (*ybApi.ListTabletServersResponsePB, error)
 	MasterLeaderStepDown() (*ybApi.GetMasterRegistrationResponsePB, error)
+	ModifyPlacementInfo(*configs.OpModifyPlacementInfoConfig) (*ybApi.ChangeMasterClusterConfigResponsePB, error)
 	Ping() (*ybApi.PingResponsePB, error)
 	SetLoadBalancerState(bool) (*ybApi.ChangeLoadBalancerStateResponsePB, error)
 	SetPreferredZones(*configs.OpSetPreferredZonesConfig) (*ybApi.SetPreferredZonesResponsePB, error)

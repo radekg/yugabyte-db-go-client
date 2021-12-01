@@ -115,6 +115,7 @@ where the command is one of:
 - `list-tables`: List all tables in this database.
 - `list-tablet-servers`: List all the tablet servers in this database.
 - `master-leader-step-down`: Try to force the current master leader to step down.
+- `modify-placement-info`: Modifies the placement information (cloud, region, and zone) for a deployment.
 - `ping`: Ping a certain YB server.
 - `set-load-balancer-state`: Set the load balancer state.
 - `set-preferred-zones`: Sets the preferred availability zones (AZs) and regions.
@@ -209,11 +210,6 @@ Examples:
 
 - `--primary-only`: boolean, list primary tablet servers only, default `false`
 
-#### ping
-
-- `--host`: string, host to ping, default `<empty string>`
-- `--port`: int, port to ping, default `0`, must be higher than `0`
-
 #### is-load-balanced
 
 - `--expected-num-servers`: int32, how many servers to include in this check, default `-1` (`undefined`)
@@ -223,6 +219,17 @@ Examples:
 - `--host`: string, host to check, default `<empty string>`
 - `--port`: int, port to check, default `0`, must be higher than `0`
 - `--is-tserver`: boolean, when `true` - indicated a TServer, default `false`
+
+#### modify-placement-info
+
+- `--placement-info`: string, repeated, placement for cloud.region.zone, default cluster value is `cloud1.datacenter1.rack1`, default `empty`, at least one required
+- `--replication-factor`: uint32, the number of replicas for each tablet, default `0` (must be explicitly specified)
+- `--placement-uuid`: string, the identifier of the primary cluster, which can be any unique string, optional, if not set, a randomly-generated ID will be used, default `not set`
+
+#### ping
+
+- `--host`: string, host to ping, default `<empty string>`
+- `--port`: int, port to ping, default `0`, must be higher than `0`
 
 #### set-load-balancer-state
 

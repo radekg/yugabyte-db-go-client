@@ -52,7 +52,7 @@ func zoneInfoToCloudPB(input string) (*ybApi.CloudInfoPB, error) {
 			PlacementCloud: &parts[0],
 		}, nil
 	}
-	return defaultZoneInfo(), nil
+	return nil, fmt.Errorf("empty zone info")
 }
 
 func defaultZoneInfo() *ybApi.CloudInfoPB {
