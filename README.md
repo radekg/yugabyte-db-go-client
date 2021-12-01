@@ -127,6 +127,7 @@ where the command is one of:
 - `list-snapshots`: List snapshots.
 - `list-snapshot-restorations`: List snapshot restorations.
 - `restore-snapshot`: Restore a snapshot.
+- `restore-snapshot-schedule`: Restore a snapshot schedule.
 
 - `create-snapshot-schedule`: Creates a snapshot schedule from an entire keyspace or selected tables in the keyspace.
 - `delete-snapshot-schedule`: Delete a snapshot schedule.
@@ -281,9 +282,21 @@ Examples:
 
 ##### restore-snapshot
 
+- `--schedule-id`: string, schedule identifier, default `empty string` (not defined)
+- `--base64-encoded`: boolean, base64 decode given snapshot ID before handling over to the API, default `false`
+- `--restore-at`: uint64, absolute Timing Option: Max HybridTime, in micros, default `0` (undefined)
+- `--restore-relative`: duration expression (`1h`, `1d`, ...), relative restore time in the past to fetched server clock time, takes precedence when specified, default `0`
+
+When `--restore-at` and `--restore-relative` are not specified or bot hare set to `0`, restores to the given snapshot's creation time.
+
+##### restore-snapshot-schedule
+
 - `--snapshot-id`: string, snapshot identifier, default `empty string` (not defined)
 - `--base64-encoded`: boolean, base64 decode given snapshot ID before handling over to the API, default `false`
-- `--restore-ht-micros`: uint64, absolute Timing Option: Max HybridTime, in micros, default `0` (undefined)
+- `--restore-at`: uint64, absolute Timing Option: Max HybridTime, in micros, default `0` (undefined)
+- `--restore-relative`: duration expression (`1h`, `1d`, ...), relative restore time in the past to fetched server clock time, takes precedence when specified, default `0`
+
+When `--restore-at` and `--restore-relative` are not specified or bot hare set to `0`, restores to the given snapshot's creation time.
 
 ##### create-snapshot-schedule
 

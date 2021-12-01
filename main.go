@@ -30,6 +30,7 @@ import (
 	snapshotslistrestorations "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/listrestorations"
 	snapshotslistschedules "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/listschedules"
 	snapshotsrestore "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/restore"
+	snapshotsrestoreschedule "github.com/radekg/yugabyte-db-go-client/cmd/snapshots/restoreschedule"
 
 	"github.com/spf13/cobra"
 )
@@ -70,6 +71,7 @@ func init() {
 	rootCmd.AddCommand(snapshotslistrestorations.Command)
 	rootCmd.AddCommand(snapshotslistschedules.Command)
 	rootCmd.AddCommand(snapshotslist.Command)
+	rootCmd.AddCommand(snapshotsrestoreschedule.Command)
 	rootCmd.AddCommand(snapshotsrestore.Command)
 }
 
