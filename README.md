@@ -237,6 +237,7 @@ Options are mutually exclusive, exactly one has to be set:
 - `--name`: repeated string, table name to create snapshot of, default `empty list`
 - `--uuid`: repeated string, table ID to create snapshot of, default `empty list`
 - `--schedule-id`: base64 encoded, create snapshot to this schedule, other fields are ignored, default `empty`
+- `--base64-encoded`: boolean, base64 decode given schedule ID before handling over to the API, default `false`
 
 Remarks:
 
@@ -266,7 +267,9 @@ Examples:
 
 - `--schedule-id`: string, snapshot identifier, required, default `empty string` (not defined)
 - `--restoration-id`: string, restoration identifier, required, default `empty string` (not defined)
-- `--base64-encoded`: boolean, base64 decode given snapshot ID before handling over to the API, default `false`
+- `--base64-encoded`: boolean, base64 decode given schedule ID and restoration ID before handling over to the API, default `false`
+
+THe `--base64-encoded` flag applies to both: `--schedule-id` and `--restoration-id`. Both values must either UUIDs or be Base64 encoded. The command will fail if one value is a UUID and another is encoded.
 
 ##### export-snapshot
 
@@ -283,7 +286,7 @@ Examples:
 ##### restore-snapshot
 
 - `--schedule-id`: string, schedule identifier, default `empty string` (not defined)
-- `--base64-encoded`: boolean, base64 decode given snapshot ID before handling over to the API, default `false`
+- `--base64-encoded`: boolean, base64 decode given schedule ID before handling over to the API, default `false`
 - `--restore-at`: uint64, absolute Timing Option: Max HybridTime, in micros, default `0` (undefined)
 - `--restore-relative`: duration expression (`1h`, `1d`, ...), relative restore time in the past to fetched server clock time, takes precedence when specified, default `0`
 
@@ -316,10 +319,12 @@ Examples:
 ##### delete-snapshot-schedule
 
 - `--schedule-id`: string, snapshot identifier, required, default `empty string` (not defined)
+- `--base64-encoded`: boolean, base64 decode given schedule ID before handling over to the API, default `false`
 
 ##### list-snapshot-schedules
 
-- `--schedule-id`: string, snapshot identifier, required, default `empty string` (not defined)
+- `--schedule-id`: string, snapshot identifier, optional, default `empty string` (not defined)
+- `--base64-encoded`: boolean, base64 decode given schedule ID before handling over to the API, default `false`
 
 ## Minimal YugabyteDB cluster in Docker compose
 

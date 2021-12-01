@@ -10,7 +10,8 @@ import (
 type OpSnapshotDeleteScheduleConfig struct {
 	flagBase
 
-	ScheduleID []byte
+	ScheduleID    string
+	Base64Encoded bool
 }
 
 // NewOpSnapshotDeleteScheduleConfig returns an instance of the command specific config.
@@ -21,7 +22,8 @@ func NewOpSnapshotDeleteScheduleConfig() *OpSnapshotDeleteScheduleConfig {
 // FlagSet returns an instance of the flag set for the configuration.
 func (c *OpSnapshotDeleteScheduleConfig) FlagSet() *pflag.FlagSet {
 	if c.initFlagSet() {
-		c.flagSet.BytesBase64Var(&c.ScheduleID, "schedule-id", []byte{}, "Snapshot schedule identifier")
+		c.flagSet.StringVar(&c.ScheduleID, "schedule-id", "", "Snapshot schedule identifier")
+		c.flagSet.BoolVar(&c.Base64Encoded, "base64-encoded", false, "If true, accepts the --schedule-id as base64 encoded string")
 	}
 	return c.flagSet
 }

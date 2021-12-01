@@ -8,9 +8,9 @@ import (
 
 // DecodeAsYugabyteID returns a snapshot ID or an error.
 func DecodeAsYugabyteID(input string, base64Encoded bool) (string, error) {
-	givenSnapshotID := input
+	decodedID := input
 	if base64Encoded {
-		decoded, err := base64.StdEncoding.DecodeString(givenSnapshotID)
+		decoded, err := base64.StdEncoding.DecodeString(decodedID)
 		if err != nil {
 			return "", err
 		}
@@ -18,9 +18,9 @@ func DecodeAsYugabyteID(input string, base64Encoded bool) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		givenSnapshotID = protoReadySnapshotID
+		decodedID = protoReadySnapshotID
 	}
-	return givenSnapshotID, nil
+	return decodedID, nil
 }
 
 // ProtoYugabyteIDToString converts the spanshot id represented as bytes to a string UUID.
