@@ -6,6 +6,7 @@ import (
 
 	"github.com/radekg/yugabyte-db-go-client/cmd/checkexists"
 	"github.com/radekg/yugabyte-db-go-client/cmd/describetable"
+	"github.com/radekg/yugabyte-db-go-client/cmd/getisloadbalanceridle"
 	"github.com/radekg/yugabyte-db-go-client/cmd/getloadmovecompletion"
 	"github.com/radekg/yugabyte-db-go-client/cmd/getmasterregistration"
 	"github.com/radekg/yugabyte-db-go-client/cmd/gettabletsfortable"
@@ -50,6 +51,7 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(checkexists.Command)
 	rootCmd.AddCommand(describetable.Command)
+	rootCmd.AddCommand(getisloadbalanceridle.Command)
 	rootCmd.AddCommand(getloadmovecompletion.Command)
 	rootCmd.AddCommand(getmasterregistration.Command)
 	rootCmd.AddCommand(gettabletsfortable.Command)

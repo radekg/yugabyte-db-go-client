@@ -1,4 +1,4 @@
-package ysqlcatalogversion
+package getisloadbalanceridle
 
 import (
 	"encoding/json"
@@ -12,8 +12,8 @@ import (
 
 // Command is the command declaration.
 var Command = &cobra.Command{
-	Use:   "ysql-catalog-version",
-	Short: "Fetch current YSQL catalog version",
+	Use:   "get-is-load-balancer-idle",
+	Short: "Finds out if the load balancer is idle",
 	Run:   run,
 	Long:  ``,
 }
@@ -38,7 +38,7 @@ func run(cobraCommand *cobra.Command, _ []string) {
 
 func processCommand() int {
 
-	logger := logConfig.NewLogger("ysql-catalog-version")
+	logger := logConfig.NewLogger("get-is-load-balancer-idle")
 
 	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig} {
 		if err := validatingConfig.Validate(); err != nil {
@@ -54,13 +54,13 @@ func processCommand() int {
 	}
 	defer cliClient.Close()
 
-	responsePayload, err := cliClient.YsqlCatalogVersion()
+	registration, err := cliClient.GetIsLoadBalancerIdle()
 	if err != nil {
-		logger.Error("failed fetching YSQL catalog version", "reason", err)
+		logger.Error("failed reading load balancer idle state", "reason", err)
 		return 1
 	}
 
-	jsonBytes, err := json.MarshalIndent(responsePayload, "", "  ")
+	jsonBytes, err := json.MarshalIndent(registration, "", "  ")
 	if err != nil {
 		logger.Error("failed marshaling JSON response", "reason", err)
 		return 1

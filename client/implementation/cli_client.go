@@ -13,11 +13,11 @@ type YBCliClient interface {
 
 	CheckExists(*configs.OpGetTableSchemaConfig) (*ybApi.GetTableSchemaResponsePB, error)
 	DescribeTable(*configs.OpGetTableSchemaConfig) (*ybApi.GetTableSchemaResponsePB, error)
+	GetIsLoadBalancerIdle() (*ybApi.IsLoadBalancerIdleResponsePB, error)
 	GetLoadMoveCompletion() (*ybApi.GetLoadMovePercentResponsePB, error)
 	GetMasterRegistration() (*ybApi.GetMasterRegistrationResponsePB, error)
 	GetTabletsForTable(*configs.OpGetTableLocationsConfig) (*ybApi.GetTableLocationsResponsePB, error)
 	GetUniverseConfig() (*ybApi.GetMasterClusterConfigResponsePB, error)
-	GetYsqlCatalogVersion() (*ybApi.GetYsqlCatalogConfigResponsePB, error)
 	IsLoadBalanced(*configs.OpIsLoadBalancedConfig) (*ybApi.IsLoadBalancedResponsePB, error)
 	IsTabletServerReady() (*ybApi.IsTabletServerReadyResponsePB, error)
 	LeaderStepDown(*configs.OpLeaderStepDownConfig) (*ybApi.LeaderStepDownResponsePB, error)
@@ -41,6 +41,8 @@ type YBCliClient interface {
 	SnapshotsList(*configs.OpSnapshotListConfig) (*ybApi.ListSnapshotsResponsePB, error)
 	SnapshotsRestoreSchedule(*configs.OpSnapshotRestoreScheduleConfig) (*ybApi.RestoreSnapshotResponsePB, error)
 	SnapshotsRestore(*configs.OpSnapshotRestoreConfig) (*ybApi.RestoreSnapshotResponsePB, error)
+
+	YsqlCatalogVersion() (*ybApi.GetYsqlCatalogConfigResponsePB, error)
 
 	OnConnected() <-chan struct{}
 	OnConnectError() <-chan error
