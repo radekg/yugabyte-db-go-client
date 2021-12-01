@@ -280,28 +280,19 @@ Examples:
 ##### restore-snapshot
 
 - `--schedule-id`: string, schedule identifier - literal ID or Base64 encoded value from YugabyteDB RPC API, required, default `empty string` (not defined)
-- `--restore-at`: uint64, absolute Timing Option: Max HybridTime, in micros, default `0` (undefined)
-- `--restore-relative`: duration expression (`1h`, `1d`, ...), relative restore time in the past to fetched server clock time, takes precedence when specified, default `0`
-
-When `--restore-at` and `--restore-relative` are not specified or bot hare set to `0`, restores to the given snapshot's creation time.
+- `--restore-target`: exact past HT (`16 digit literal`) or duration expression (`1h`, `5h15m`, ...), absolute Timing Option: Max HybridTime, or relative past interval, default `empty` (undefined)
 
 ##### restore-snapshot-schedule
 
 - `--snapshot-id`: string, snapshot identifier - literal ID or Base64 encoded value from YugabyteDB RPC API, required, default `empty string` (not defined)
-- `--restore-at`: uint64, absolute Timing Option: Max HybridTime, in micros, default `0` (undefined)
-- `--restore-relative`: duration expression (`1h`, `1d`, ...), relative restore time in the past to fetched server clock time, takes precedence when specified, default `0`
-
-When `--restore-at` and `--restore-relative` are not specified or bot hare set to `0`, restores to the given snapshot's creation time.
+- `--restore-target`: exact past HT (`16 digit literal`) or duration expression (`1h`, `5h15m`, ...), absolute Timing Option: Max HybridTime, or relative past interval, default `empty` (undefined)
 
 ##### create-snapshot-schedule
-
-Choose on: `--delete-after` or `--delete-at`.
 
 - `--keyspace`: string, keyspace name to create snapshot of, default `<empty string>`
 - `--interval`: duration expression (`1h`, `1d`, ...), interval for taking snapshot in seconds, default `0` (undefined)
 - `--retention-duration`: duration expression (`1h`, `1d`, ...), how long store snapshots in seconds, default `0` (undefined)
-- `--delete-after`: duration expression (`1h`, `1d`, ...), how long until schedule is removed in seconds, hybrid time will be calculated by fetching server hybrid time and adding this value, default `0` (undefined)
-- `--delete-at`: duration expression (`1h`, `1d`, ...), how long until schedule is removed in seconds, hybrid time will be calculated by fetching server hybrid time and adding this value, default `0` (undefined)
+- `--delete-after`: exact future HT (`16 digit literal`) or duration expression (`1h`, `5h15m`, ...), how long until schedule is removed in seconds, hybrid time will be calculated by fetching server hybrid time and adding this value, default `0` (undefined)
 
 Examples:
 

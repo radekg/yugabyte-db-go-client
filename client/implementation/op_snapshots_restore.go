@@ -23,8 +23,14 @@ func (c *defaultYBCliClient) SnapshotsRestore(opConfig *configs.OpSnapshotRestor
 		SnapshotId: ybDbID.Bytes(),
 	}
 
-	relativeTime, err := relativetime.RelativeOrFixedPast(opConfig.RestoreAt,
-		opConfig.RestoreRelative,
+	restoreFixedTime, restoreDuration, err := relativetime.ParseTimeOrDuration(opConfig.RestoreTarget)
+	if err != nil {
+		c.logger.Error("invalid restore target expression", "expression", opConfig.RestoreTarget, "reason", err)
+		return nil, err
+	}
+
+	relativeTime, err := relativetime.RelativeOrFixedPast(restoreFixedTime,
+		restoreDuration,
 		c.defaultServerClockResolver)
 	if err != nil {
 		c.logger.Error("failed resolving restore target time", "reason", err)

@@ -39,8 +39,14 @@ func (c *defaultYBCliClient) SnapshotsCreateSchedule(opConfig *configs.OpSnapsho
 		}()
 	}
 
-	futureTime, err := relativetime.RelativeOrFixedFuture(opConfig.DeleteTime,
-		opConfig.DeleteAfter,
+	deleteFixedTime, deleteDuration, err := relativetime.ParseTimeOrDuration(opConfig.DeleteAfter)
+	if err != nil {
+		c.logger.Error("invalid delete after expression", "expression", opConfig.DeleteAfter, "reason", err)
+		return nil, err
+	}
+
+	futureTime, err := relativetime.RelativeOrFixedFuture(deleteFixedTime,
+		deleteDuration,
 		c.defaultServerClockResolver)
 	if err != nil {
 		c.logger.Error("failed resolving delete at time", "reason", err)

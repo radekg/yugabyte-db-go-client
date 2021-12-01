@@ -9,6 +9,10 @@ import (
 // ParseTimeOrDuration parses input string as fixed HT or time.Duration.
 func ParseTimeOrDuration(input string) (uint64, time.Duration, error) {
 
+	if input == "" {
+		return 0, 0, nil
+	}
+
 	// The HybridTime is given in microseconds and will contain 16 chars.
 	match, _ := regexp.MatchString("^(\\d{16})$", input)
 	if match {

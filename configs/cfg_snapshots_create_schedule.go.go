@@ -14,8 +14,7 @@ type OpSnapshotCreateScheduleConfig struct {
 	Keyspace              string
 	IntervalSecs          time.Duration
 	RetendionDurationSecs time.Duration
-	DeleteAfter           time.Duration
-	DeleteTime            uint64
+	DeleteAfter           string
 }
 
 // NewOpSnapshotCreateScheduleConfig returns an instance of the command specific config.
@@ -29,8 +28,7 @@ func (c *OpSnapshotCreateScheduleConfig) FlagSet() *pflag.FlagSet {
 		c.flagSet.StringVar(&c.Keyspace, "keyspace", "", "Keyspace for the tables in this create request")
 		c.flagSet.DurationVar(&c.IntervalSecs, "interval", time.Second*0, "Interval for taking snapshot in seconds")
 		c.flagSet.DurationVar(&c.RetendionDurationSecs, "retention-duration", time.Second*0, "How long store snapshots in seconds")
-		c.flagSet.DurationVar(&c.DeleteAfter, "delete-after", time.Second*0, "How long until schedule is removed in seconds, hybrid time will be calculated by fetching server hybrid time and adding this value")
-		c.flagSet.Uint64Var(&c.DeleteTime, "delete-at", 0, "Hybrid time when this schedule is deleted")
+		c.flagSet.StringVar(&c.DeleteAfter, "delete-after", "", "How long until schedule is removed in seconds, hybrid time will be calculated by fetching server hybrid time and adding this value")
 	}
 	return c.flagSet
 }
@@ -39,9 +37,6 @@ func (c *OpSnapshotCreateScheduleConfig) FlagSet() *pflag.FlagSet {
 func (c *OpSnapshotCreateScheduleConfig) Validate() error {
 	if c.Keyspace == "" {
 		return fmt.Errorf("--keyspace is required")
-	}
-	if c.DeleteAfter.Milliseconds() > 0 && c.DeleteTime > 0 {
-		return fmt.Errorf("--delete-after and --delete-at specified, choose one")
 	}
 	return nil
 }

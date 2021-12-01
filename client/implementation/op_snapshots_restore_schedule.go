@@ -13,8 +13,14 @@ import (
 // Restore schedule.
 func (c *defaultYBCliClient) SnapshotsRestoreSchedule(opConfig *configs.OpSnapshotRestoreScheduleConfig) (*ybApi.RestoreSnapshotResponsePB, error) {
 
-	restoreAt, err := relativetime.RelativeOrFixedPastWithFallback(opConfig.RestoreAt,
-		opConfig.RestoreRelative,
+	restoreFixedTime, restoreDuration, err := relativetime.ParseTimeOrDuration(opConfig.RestoreTarget)
+	if err != nil {
+		c.logger.Error("invalid restore target expression", "expression", opConfig.RestoreTarget, "reason", err)
+		return nil, err
+	}
+
+	restoreAt, err := relativetime.RelativeOrFixedPastWithFallback(restoreFixedTime,
+		restoreDuration,
 		c.defaultServerClockResolver)
 	if err != nil {
 		return nil, fmt.Errorf("could not establish restore at time")
@@ -79,8 +85,8 @@ loop:
 	}
 
 	restoreResponse, err := c.SnapshotsRestore(&configs.OpSnapshotRestoreConfig{
-		SnapshotID: suitableYbDbID.String(),
-		RestoreAt:  restoreAt,
+		SnapshotID:    suitableYbDbID.String(),
+		RestoreTarget: opConfig.RestoreTarget,
 	})
 	if err != nil {
 		return nil, err
