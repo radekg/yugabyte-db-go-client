@@ -42,7 +42,7 @@ func processCommand() int {
 
 	logger := logConfig.NewLogger("export-snapshot")
 
-	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig} {
+	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig, opConfig} {
 		if err := validatingConfig.Validate(); err != nil {
 			logger.Error("configuration is invalid", "reason", err)
 			return 1

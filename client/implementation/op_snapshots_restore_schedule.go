@@ -6,26 +6,12 @@ import (
 
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	"github.com/radekg/yugabyte-db-go-client/utils"
+	"github.com/radekg/yugabyte-db-go-client/utils/ybdbid"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
 
 // Restore schedule.
 func (c *defaultYBCliClient) SnapshotsRestoreSchedule(opConfig *configs.OpSnapshotRestoreScheduleConfig) (*ybApi.RestoreSnapshotResponsePB, error) {
-
-	/*
-		givenScheduleID, err := utils.DecodeAsYugabyteID(opConfig.ScheduleID, opConfig.Base64Encoded)
-		if err != nil {
-			c.logger.Error("failed fetching normalized schedule id",
-				"given-value", opConfig.ScheduleID,
-				"reason", err)
-			return nil, err
-		}
-
-		protoID, err := utils.StringUUIDToProtoYugabyteID(givenScheduleID)
-		if err != nil {
-			return nil, err
-		}
-	*/
 
 	restoreAt, err := getRestoreScheduleAt(c, opConfig)
 	if err != nil {
@@ -40,19 +26,22 @@ func (c *defaultYBCliClient) SnapshotsRestoreSchedule(opConfig *configs.OpSnapsh
 		return nil, err
 	}
 
-	suitableSnapshotIDString, err := utils.ProtoYugabyteIDToString(suitableSnapshotID)
+	suitableYbDbID, err := ybdbid.TryParseFromBytes(suitableSnapshotID)
 	if err != nil {
+		c.logger.Error("suitable snapshot id cann't be parsed as YugabyteDB ID",
+			"bytes", suitableSnapshotID,
+			"reason", err)
 		return nil, err
 	}
 
 	c.logger.Trace("found suitable snapshot id",
-		"snapshot-id", suitableSnapshotIDString)
+		"snapshot-id", suitableYbDbID.String())
 
 	// wait for the snapshot to be complete:
 loop:
 	for {
 		snapshotsResponse, err := c.SnapshotsList(&configs.OpSnapshotListConfig{
-			SnapshotID: suitableSnapshotIDString,
+			SnapshotID: suitableYbDbID.String(),
 		})
 		if err != nil {
 			return nil, err
@@ -65,18 +54,18 @@ loop:
 		}
 
 		c.logger.Trace("loaded snapshot for suitable snapshot id",
-			"snapshot-id", suitableSnapshotIDString,
+			"snapshot-id", suitableYbDbID.String(),
 			"snapshot", snapshotsResponse.Snapshots[0].Entry)
 
 		if snapshotsResponse.Snapshots[0].Entry == nil {
-			return nil, fmt.Errorf("snapshot without an entry, snapshot ID %s", suitableSnapshotIDString)
+			return nil, fmt.Errorf("snapshot without an entry, snapshot ID %s", suitableYbDbID.String())
 		}
 		if snapshotsResponse.Snapshots[0].Entry.State == nil {
-			return nil, fmt.Errorf("snapshot entry without a state, snapshot ID %s", suitableSnapshotIDString)
+			return nil, fmt.Errorf("snapshot entry without a state, snapshot ID %s", suitableYbDbID.String())
 		}
 
 		c.logger.Trace("loaded snapshot for suitable snapshot id",
-			"snapshot-id", suitableSnapshotIDString,
+			"snapshot-id", suitableYbDbID.String(),
 			"state", snapshotsResponse.Snapshots[0].Entry.State)
 
 		switch *snapshotsResponse.Snapshots[0].Entry.State {
@@ -88,7 +77,7 @@ loop:
 	}
 
 	restoreResponse, err := c.SnapshotsRestore(&configs.OpSnapshotRestoreConfig{
-		SnapshotID: suitableSnapshotIDString,
+		SnapshotID: suitableYbDbID.String(),
 		RestoreAt:  restoreAt,
 	})
 	if err != nil {
@@ -123,15 +112,16 @@ func (c *defaultYBCliClient) suitableSnapshotID(scheduleID string, restoreAt uin
 		lastSnapshotTime := uint64(0)
 
 		// only look at first schedule:
-		for _, snapshot := range schedules.Schedules[0].Snapshots {
-			snapshotIDString, err := utils.ProtoYugabyteIDToString(snapshot.Id)
+		for _, candidateSnapshot := range schedules.Schedules[0].Snapshots {
+
+			candidateSnapshotYbDbID, err := ybdbid.TryParseFromBytes(candidateSnapshot.Id)
 			if err != nil {
-				c.logger.Error("Snapshot without id")
+				c.logger.Error("skipping candidate snapshot with invalid id", "bytes", candidateSnapshot.Id)
 				continue
 			}
-			snapshotHt := snapshot.Entry.SnapshotHybridTime
+			snapshotHt := candidateSnapshot.Entry.SnapshotHybridTime
 			if snapshotHt == nil {
-				c.logger.Error("Snapshot without hybrid time", "snapshot", snapshotIDString)
+				c.logger.Error("Snapshot without hybrid time", "snapshot", candidateSnapshotYbDbID.String())
 				continue
 			}
 			if *snapshotHt > lastSnapshotTime {
@@ -139,14 +129,14 @@ func (c *defaultYBCliClient) suitableSnapshotID(scheduleID string, restoreAt uin
 			}
 
 			// is it suitable...
-			if c.snapshotSuitableForRestoreAt(snapshot.Entry, restoreAt) {
-				c.logger.Info("snaphost picked for restore",
-					"snapshot-id", snapshotIDString)
-				return snapshot.Id, nil
+			if c.snapshotSuitableForRestoreAt(candidateSnapshot.Entry, restoreAt) {
+				c.logger.Info("candidate snaphost ACCEPTED for restore",
+					"snapshot-id", candidateSnapshotYbDbID.String())
+				return candidateSnapshot.Id, nil
 			}
 
-			c.logger.Info("snapshot rejected for restore",
-				"snapshot-id", snapshotIDString)
+			c.logger.Info("candidate snapshot REJECTED for restore",
+				"snapshot-id", candidateSnapshotYbDbID.String())
 
 		}
 

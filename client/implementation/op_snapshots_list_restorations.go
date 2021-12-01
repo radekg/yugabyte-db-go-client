@@ -2,7 +2,7 @@ package implementation
 
 import (
 	"github.com/radekg/yugabyte-db-go-client/configs"
-	"github.com/radekg/yugabyte-db-go-client/utils"
+	"github.com/radekg/yugabyte-db-go-client/utils/ybdbid"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
 
@@ -12,33 +12,25 @@ func (c *defaultYBCliClient) SnapshotsListRestorations(opConfig *configs.OpSnaps
 	useSnapshotID := []byte{}
 	useRestorationID := []byte{}
 	if opConfig.SnapshotID != "" {
-		givenSnapshotID, err := utils.DecodeAsYugabyteID(opConfig.SnapshotID, opConfig.Base64Encoded)
+		ybDbID, err := ybdbid.TryParseFromString(opConfig.SnapshotID)
 		if err != nil {
-			c.logger.Error("failed fetching normalized snapshot id",
-				"given-value", opConfig.SnapshotID,
+			c.logger.Error("given snapshot id is not valid",
+				"original-value", opConfig.SnapshotID,
 				"reason", err)
 			return nil, err
 		}
-		protoSnapshotID, err := utils.StringUUIDToProtoYugabyteID(givenSnapshotID)
-		if err != nil {
-			return nil, err
-		}
-		useSnapshotID = protoSnapshotID
+		useSnapshotID = ybDbID.Bytes()
 	}
 
 	if opConfig.RestorationID != "" {
-		givenRestorationID, err := utils.DecodeAsYugabyteID(opConfig.RestorationID, opConfig.Base64Encoded)
+		ybDbID, err := ybdbid.TryParseFromString(opConfig.RestorationID)
 		if err != nil {
-			c.logger.Error("failed fetching normalized restoration id",
-				"given-value", opConfig.RestorationID,
+			c.logger.Error("given snapshot id is not valid",
+				"original-value", opConfig.SnapshotID,
 				"reason", err)
 			return nil, err
 		}
-		protoRestorationID, err := utils.StringUUIDToProtoYugabyteID(givenRestorationID)
-		if err != nil {
-			return nil, err
-		}
-		useRestorationID = protoRestorationID
+		useRestorationID = ybDbID.Bytes()
 	}
 
 	payload := &ybApi.ListSnapshotRestorationsRequestPB{}

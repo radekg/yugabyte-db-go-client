@@ -253,28 +253,22 @@ Examples:
 
 ##### delete-snapshot
 
-- `--snapshot-id`: string, snapshot identifier, required, default `empty string` (not defined)
-- `--base64-encoded`: boolean, base64 decode given snapshot ID before handling over to the API, default `false`
+- `--snapshot-id`: string, snapshot identifier - literal ID or Base64 encoded value from YugabyteDB RPC API, required, default `empty string` (not defined)
 
 ##### list-snapshots
 
-- `--snapshot-id`: string, snapshot identifier, default `empty string` (not defined)
-- `--base64-encoded`: boolean, base64 decode given snapshot ID before handling over to the API, default `false`
+- `--snapshot-id`: string, snapshot identifier - literal ID or Base64 encoded value from YugabyteDB RPC API, optional, default `empty string` (not defined)
 - `--list-deleted-snapshots`: boolean, list deleted snapshots, default `false`
 - `--prepare-for-backup`: boolean, prepare for backup, default `false`
 
 ##### list-snapshot-restorations
 
-- `--schedule-id`: string, snapshot identifier, required, default `empty string` (not defined)
-- `--restoration-id`: string, restoration identifier, required, default `empty string` (not defined)
-- `--base64-encoded`: boolean, base64 decode given schedule ID and restoration ID before handling over to the API, default `false`
-
-THe `--base64-encoded` flag applies to both: `--schedule-id` and `--restoration-id`. Both values must either UUIDs or be Base64 encoded. The command will fail if one value is a UUID and another is encoded.
+- `--schedule-id`: string, snapshot identifier - literal ID or Base64 encoded value from YugabyteDB RPC API, optional, default `empty string` (not defined)
+- `--restoration-id`: string, restoration identifier - literal ID or Base64 encoded value from YugabyteDB RPC API, optional, default `empty string` (not defined)
 
 ##### export-snapshot
 
-- `--snapshot-id`: string, snapshot identifier, default `empty string` (not defined)
-- `--base64-encoded`: boolean, base64 decode given snapshot ID before handling over to the API, default `false`
+- `--snapshot-id`: string, snapshot identifier- literal ID or Base64 encoded value from YugabyteDB RPC API, required, default `empty string` (not defined)
 - `--file-path`: string, full path to the export file, parent directories must exist, default `empty`
 
 ##### import-snapshot
@@ -285,8 +279,7 @@ THe `--base64-encoded` flag applies to both: `--schedule-id` and `--restoration-
 
 ##### restore-snapshot
 
-- `--schedule-id`: string, schedule identifier, default `empty string` (not defined)
-- `--base64-encoded`: boolean, base64 decode given schedule ID before handling over to the API, default `false`
+- `--schedule-id`: string, schedule identifier - literal ID or Base64 encoded value from YugabyteDB RPC API, required, default `empty string` (not defined)
 - `--restore-at`: uint64, absolute Timing Option: Max HybridTime, in micros, default `0` (undefined)
 - `--restore-relative`: duration expression (`1h`, `1d`, ...), relative restore time in the past to fetched server clock time, takes precedence when specified, default `0`
 
@@ -294,8 +287,7 @@ When `--restore-at` and `--restore-relative` are not specified or bot hare set t
 
 ##### restore-snapshot-schedule
 
-- `--snapshot-id`: string, snapshot identifier, default `empty string` (not defined)
-- `--base64-encoded`: boolean, base64 decode given snapshot ID before handling over to the API, default `false`
+- `--snapshot-id`: string, snapshot identifier - literal ID or Base64 encoded value from YugabyteDB RPC API, required, default `empty string` (not defined)
 - `--restore-at`: uint64, absolute Timing Option: Max HybridTime, in micros, default `0` (undefined)
 - `--restore-relative`: duration expression (`1h`, `1d`, ...), relative restore time in the past to fetched server clock time, takes precedence when specified, default `0`
 
@@ -318,13 +310,11 @@ Examples:
 
 ##### delete-snapshot-schedule
 
-- `--schedule-id`: string, snapshot identifier, required, default `empty string` (not defined)
-- `--base64-encoded`: boolean, base64 decode given schedule ID before handling over to the API, default `false`
+- `--schedule-id`: string, snapshot identifier - literal ID or Base64 encoded value from YugabyteDB RPC API, required, default `empty string` (not defined)
 
 ##### list-snapshot-schedules
 
-- `--schedule-id`: string, snapshot identifier, optional, default `empty string` (not defined)
-- `--base64-encoded`: boolean, base64 decode given schedule ID before handling over to the API, default `false`
+- `--schedule-id`: string, snapshot identifier - literal ID or Base64 encoded value from YugabyteDB RPC API, optional, default `empty string` (not defined)
 
 ## Minimal YugabyteDB cluster in Docker compose
 

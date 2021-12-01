@@ -10,8 +10,7 @@ import (
 type OpSnapshotDeleteConfig struct {
 	flagBase
 
-	SnapshotID    string
-	Base64Encoded bool
+	SnapshotID string
 }
 
 // NewOpSnapshotDeleteConfig returns an instance of the command specific config.
@@ -23,7 +22,6 @@ func NewOpSnapshotDeleteConfig() *OpSnapshotDeleteConfig {
 func (c *OpSnapshotDeleteConfig) FlagSet() *pflag.FlagSet {
 	if c.initFlagSet() {
 		c.flagSet.StringVar(&c.SnapshotID, "snapshot-id", "", "Snapshot identifier")
-		c.flagSet.BoolVar(&c.Base64Encoded, "base64-encoded", false, "If true, accepts the --snapshot-id as base64 encoded string")
 	}
 	return c.flagSet
 }
