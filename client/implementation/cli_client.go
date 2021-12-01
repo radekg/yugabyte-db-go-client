@@ -17,6 +17,7 @@ type YBCliClient interface {
 	GetMasterRegistration() (*ybApi.GetMasterRegistrationResponsePB, error)
 	GetTabletsForTable(*configs.OpGetTableLocationsConfig) (*ybApi.GetTableLocationsResponsePB, error)
 	GetUniverseConfig() (*ybApi.GetMasterClusterConfigResponsePB, error)
+	GetYsqlCatalogVersion() (*ybApi.GetYsqlCatalogConfigResponsePB, error)
 	IsLoadBalanced(*configs.OpIsLoadBalancedConfig) (*ybApi.IsLoadBalancedResponsePB, error)
 	IsTabletServerReady() (*ybApi.IsTabletServerReadyResponsePB, error)
 	LeaderStepDown(*configs.OpLeaderStepDownConfig) (*ybApi.LeaderStepDownResponsePB, error)

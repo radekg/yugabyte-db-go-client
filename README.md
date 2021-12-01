@@ -117,6 +117,7 @@ where the command is one of:
 - `master-leader-step-down`: Try to force the current master leader to step down.
 - `ping`: Ping a certain YB server.
 - `set-load-balancer-state`: Set the load balancer state.
+- `ysql-catalog-version`: Fetch current YSQL catalog version.
 
 #### Snapshot commands
 
