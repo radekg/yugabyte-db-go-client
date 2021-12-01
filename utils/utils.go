@@ -107,6 +107,11 @@ func PUint32(a uint32) *uint32 {
 	return &a
 }
 
+// PUint64 returns a pointer to an uint64.
+func PUint64(a uint64) *uint64 {
+	return &a
+}
+
 // PString returns a pointer to a string.
 func PString(a string) *string {
 	if a == "" {

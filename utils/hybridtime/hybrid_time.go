@@ -1,4 +1,6 @@
-package utils
+package hybridtime
+
+import "time"
 
 const hybridTimeNumBitsToShift = 12
 
@@ -25,4 +27,14 @@ func HTTimestampToPhysicalAndLogical(htTimestamp uint64) []uint64 {
 // https://github.com/yugabyte/yugabyte-db/blob/master/java/yb-client/src/main/java/org/yb/util/HybridTimeUtil.java#L82
 func PhysicalAndLogicalToHTTimestamp(physical uint64, logical uint64) uint64 {
 	return (physical << uint64(hybridTimeNumBitsToShift)) + logical
+}
+
+// AddDuration adds a duration to HT.
+func AddDuration(ht uint64, d time.Duration) uint64 {
+	return ht + ClockTimestampToHTTimestamp(uint64(d.Microseconds()))
+}
+
+// SubstractDuration substracts a duration from HT.
+func SubstractDuration(ht uint64, d time.Duration) uint64 {
+	return ht - ClockTimestampToHTTimestamp(uint64(d.Microseconds()))
 }

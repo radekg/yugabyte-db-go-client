@@ -1,9 +1,9 @@
 package implementation
 
 import (
-	"fmt"
-
 	"github.com/radekg/yugabyte-db-go-client/configs"
+	"github.com/radekg/yugabyte-db-go-client/utils"
+	"github.com/radekg/yugabyte-db-go-client/utils/relativetime"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
 
@@ -38,19 +38,22 @@ func (c *defaultYBCliClient) SnapshotsCreateSchedule(opConfig *configs.OpSnapsho
 			return &v
 		}()
 	}
-	if opConfig.DeleteTime > 0 {
-		payload.Options.DeleteTime = &opConfig.DeleteTime
+
+	deleteFixedTime, deleteDuration, err := relativetime.ParseTimeOrDuration(opConfig.DeleteAfter)
+	if err != nil {
+		c.logger.Error("invalid delete after expression", "expression", opConfig.DeleteAfter, "reason", err)
+		return nil, err
 	}
-	if opConfig.DeleteAfter > 0 {
-		serverClock, err := c.ServerClock()
-		if err != nil {
-			return nil, err
-		}
-		if serverClock.HybridTime == nil {
-			return nil, fmt.Errorf("no hybrid time in server clock response")
-		}
-		newHybridTime := *serverClock.HybridTime + uint64(opConfig.DeleteAfter.Microseconds())
-		payload.Options.DeleteTime = &newHybridTime
+
+	futureTime, err := relativetime.RelativeOrFixedFuture(deleteFixedTime,
+		deleteDuration,
+		c.defaultServerClockResolver)
+	if err != nil {
+		c.logger.Error("failed resolving delete at time", "reason", err)
+		return nil, err
+	}
+	if futureTime > 0 {
+		payload.Options.DeleteTime = utils.PUint64(futureTime)
 	}
 
 	responsePayload := &ybApi.CreateSnapshotScheduleResponsePB{}
