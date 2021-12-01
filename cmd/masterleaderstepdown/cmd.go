@@ -12,7 +12,7 @@ import (
 
 // Command is the command declaration.
 var Command = &cobra.Command{
-	Use:   "master-leader-step-down",
+	Use:   "master-leader-stepdown",
 	Short: "Try to force the current master leader to step down",
 	Run:   run,
 	Long:  ``,
@@ -38,7 +38,7 @@ func run(cobraCommand *cobra.Command, _ []string) {
 
 func processCommand() int {
 
-	logger := logConfig.NewLogger("master-leader-step-down")
+	logger := logConfig.NewLogger("master-leader-stepdown")
 
 	for _, validatingConfig := range []configs.ValidatingConfig{commandConfig} {
 		if err := validatingConfig.Validate(); err != nil {
