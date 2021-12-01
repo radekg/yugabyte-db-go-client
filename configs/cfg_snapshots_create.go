@@ -11,10 +11,11 @@ import (
 type OpSnapshotCreateConfig struct {
 	flagBase
 
-	Keyspace   string
-	TableNames []string
-	TableUUIDs []string
-	ScheduleID []byte
+	Keyspace      string
+	TableNames    []string
+	TableUUIDs    []string
+	ScheduleID    string
+	Base64Encoded bool
 }
 
 // NewOpSnapshotCreateConfig returns an instance of the command specific config.
@@ -28,7 +29,8 @@ func (c *OpSnapshotCreateConfig) FlagSet() *pflag.FlagSet {
 		c.flagSet.StringVar(&c.Keyspace, "keyspace", "", "Keyspace for the tables in this create request")
 		c.flagSet.StringSliceVar(&c.TableNames, "name", []string{}, "Table names to create snapshots for")
 		c.flagSet.StringSliceVar(&c.TableUUIDs, "uuid", []string{}, "Table IDs to create snapshots for")
-		c.flagSet.BytesBase64Var(&c.ScheduleID, "schedule-id", []byte{}, "Create snapshot to this schedule, other fields are ignored")
+		c.flagSet.StringVar(&c.ScheduleID, "schedule-id", "", "Create snapshot to this schedule, other fields are ignored")
+		c.flagSet.BoolVar(&c.Base64Encoded, "base64-encoded", false, "If true, accepts the --schedule-id as base64 encoded string")
 	}
 	return c.flagSet
 }

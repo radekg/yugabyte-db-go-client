@@ -12,18 +12,20 @@ import (
 // Restore schedule.
 func (c *defaultYBCliClient) SnapshotsRestoreSchedule(opConfig *configs.OpSnapshotRestoreScheduleConfig) (*ybApi.RestoreSnapshotResponsePB, error) {
 
-	givenScheduleID, err := utils.DecodeAsYugabyteID(opConfig.ScheduleID, opConfig.Base64Encoded)
-	if err != nil {
-		c.logger.Error("failed fetching normalized schedule id",
-			"given-value", opConfig.ScheduleID,
-			"reason", err)
-		return nil, err
-	}
+	/*
+		givenScheduleID, err := utils.DecodeAsYugabyteID(opConfig.ScheduleID, opConfig.Base64Encoded)
+		if err != nil {
+			c.logger.Error("failed fetching normalized schedule id",
+				"given-value", opConfig.ScheduleID,
+				"reason", err)
+			return nil, err
+		}
 
-	protoID, err := utils.StringUUIDToProtoYugabyteID(givenScheduleID)
-	if err != nil {
-		return nil, err
-	}
+		protoID, err := utils.StringUUIDToProtoYugabyteID(givenScheduleID)
+		if err != nil {
+			return nil, err
+		}
+	*/
 
 	restoreAt, err := getRestoreScheduleAt(c, opConfig)
 	if err != nil {
@@ -33,7 +35,7 @@ func (c *defaultYBCliClient) SnapshotsRestoreSchedule(opConfig *configs.OpSnapsh
 	c.logger.Trace("calculated restore-at",
 		"restore-at", restoreAt)
 
-	suitableSnapshotID, err := c.suitableSnapshotID(protoID, restoreAt)
+	suitableSnapshotID, err := c.suitableSnapshotID(opConfig.ScheduleID, restoreAt)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +98,7 @@ loop:
 	return restoreResponse, nil
 }
 
-func (c *defaultYBCliClient) suitableSnapshotID(scheduleID []byte, restoreAt uint64) ([]byte, error) {
+func (c *defaultYBCliClient) suitableSnapshotID(scheduleID string, restoreAt uint64) ([]byte, error) {
 	for {
 
 		schedules, err := c.SnapshotsListSchedules(func() *configs.OpSnapshotListSchedulesConfig {
