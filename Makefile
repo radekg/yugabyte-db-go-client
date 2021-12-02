@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := build
 
-.PHONY: clean build docker-image
+.PHONY: clean build docker-image git-tag
 
 BINARY        ?= ybdb-go-cli
 SOURCES        = $(shell find . -name '*.go' | grep -v /vendor/)
@@ -12,7 +12,8 @@ GOARCH        ?= amd64
 GOOS          ?= linux
 
 DOCKER_IMAGE_REPO ?= local/
-DOCKER_IMAGE_VERSION ?= 0.0.1
+CURRENT_DIR=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
+TAG_VERSION ?= $(shell cat $(CURRENT_DIR)/.version)
 
 default: build
 
@@ -25,7 +26,10 @@ build/$(BINARY): $(SOURCES)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=0 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
 docker-image:
-	docker build -t $(DOCKER_IMAGE_REPO)$(BINARY):${DOCKER_IMAGE_VERSION} .
+	docker build -t $(DOCKER_IMAGE_REPO)$(BINARY):${TAG_VERSION} .
 
 clean:
 	@rm -rf build
+
+git-tag:
+	git tag v$(TAG_VERSION)
