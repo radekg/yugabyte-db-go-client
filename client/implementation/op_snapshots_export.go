@@ -30,11 +30,8 @@ func (c *defaultYBCliClient) SnapshotsExport(opConfig *configs.OpSnapshotExportC
 	}
 
 	payload := &ybApi.ListSnapshotsRequestPB{
-		PrepareForBackup: func() *bool {
-			v := true
-			return &v
-		}(),
-		SnapshotId: ybDbID.Bytes(),
+		PrepareForBackup: utils.PBool(true),
+		SnapshotId:       ybDbID.Bytes(),
 	}
 	responsePayload := &ybApi.ListSnapshotsResponsePB{}
 	if err := c.connectedClient.Execute(payload, responsePayload); err != nil {
