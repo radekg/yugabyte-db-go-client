@@ -38,3 +38,18 @@ func AddDuration(ht uint64, d time.Duration) uint64 {
 func SubstractDuration(ht uint64, d time.Duration) uint64 {
 	return ht - ClockTimestampToHTTimestamp(uint64(d.Microseconds()))
 }
+
+// UnixTimeFromHT takes a hybrid time and returns time.Time.
+// Nanoseconds are lost in this conversion.
+func UnixTimeFromHT(ht uint64) time.Time {
+	uints := HTTimestampToPhysicalAndLogical(ht)
+	sec := int64(uints[0] / 1000000)
+	return time.Unix(sec, 0)
+}
+
+// UnixTimeToHT takes a time.Time and returns a hybrid time.
+// Nanoseconds are lost in this conversion.
+func UnixTimeToHT(t time.Time) uint64 {
+	// drop nanoseconds:
+	return PhysicalAndLogicalToHTTimestamp(uint64(t.Unix()*1000000), 0)
+}
