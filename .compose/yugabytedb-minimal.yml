@@ -31,6 +31,8 @@ services:
     container_name: yb-master-2
     networks:
       - yb-client-minimal
+    ports:
+      - 7101:7100
     command: [ "/home/${YB_USER}/bin/yb-master",
       "--callhome_enabled=false",
       "--fs_data_dirs=${YB_MOUNT_PREFIX}/master",
@@ -48,6 +50,8 @@ services:
     container_name: yb-master-3
     networks:
       - yb-client-minimal
+    ports:
+      - 7102:7100
     command: [ "/home/${YB_USER}/bin/yb-master",
       "--callhome_enabled=false",
       "--fs_data_dirs=${YB_MOUNT_PREFIX}/master",
