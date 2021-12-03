@@ -21,11 +21,13 @@ var Command = &cobra.Command{
 var (
 	commandConfig = configs.NewCliConfig()
 	logConfig     = configs.NewLogginConfig()
+	opConfig      = configs.NewOpMMasterLeaderStepdownConfig()
 )
 
 func initFlags() {
 	Command.Flags().AddFlagSet(commandConfig.FlagSet())
 	Command.Flags().AddFlagSet(logConfig.FlagSet())
+	Command.Flags().AddFlagSet(opConfig.FlagSet())
 }
 
 func init() {
@@ -54,7 +56,7 @@ func processCommand() int {
 	}
 	defer cliClient.Close()
 
-	responsePayload, err := cliClient.MasterLeaderStepDown()
+	responsePayload, err := cliClient.MasterLeaderStepDown(opConfig)
 	if err != nil {
 		logger.Error("failed master leader step down", "reason", err)
 		return 1

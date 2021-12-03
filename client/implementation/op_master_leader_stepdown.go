@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/radekg/yugabyte-db-go-client/configs"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
 
@@ -12,7 +13,7 @@ import (
 const MasterTabletID = "00000000000000000000000000000000"
 
 // MasterLeaderStepDown attempts a master leader step down procedure.
-func (c *defaultYBCliClient) MasterLeaderStepDown() (*ybApi.GetMasterRegistrationResponsePB, error) {
+func (c *defaultYBCliClient) MasterLeaderStepDown(opConfig *configs.OpMMasterLeaderStepdownConfig) (*ybApi.GetMasterRegistrationResponsePB, error) {
 
 	masterRegistration, err := c.GetMasterRegistration()
 	if err != nil {
@@ -23,6 +24,11 @@ func (c *defaultYBCliClient) MasterLeaderStepDown() (*ybApi.GetMasterRegistratio
 		DestUuid: masterRegistration.InstanceId.PermanentUuid,
 		TabletId: []byte(MasterTabletID),
 	}
+
+	if opConfig.NewLeaderID != "" {
+		payload.NewLeaderUuid = []byte(opConfig.NewLeaderID)
+	}
+
 	responsePayload := &ybApi.LeaderStepDownResponsePB{}
 	if err := c.connectedClient.Execute(payload, responsePayload); err != nil {
 		return nil, err
@@ -43,6 +49,9 @@ topExit:
 		}
 		switch *masterRegistration.Role {
 		case ybApi.RaftPeerPB_LEADER:
+			registration = masterRegistration
+			break topExit
+		case ybApi.RaftPeerPB_FOLLOWER:
 			registration = masterRegistration
 			break topExit
 		default:
