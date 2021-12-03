@@ -3,28 +3,36 @@ package ybdbid
 import (
 	"encoding/base64"
 	"fmt"
+	"regexp"
 
 	"github.com/google/uuid"
 )
 
+// This ID type appears in the databasse when a snapshot with incorrect
+// configuration is created via RPC. To trigger creating a snapshot
+// with such ID, create a YSQL database where:
+//  - table namespace is not set
+//  - transaction aware is false
+var nonUUIDIDTypeR *regexp.Regexp
+
+func init() {
+	r, _ := regexp.Compile("^[a-fA-F0-9]{32}$")
+	nonUUIDIDTypeR = r
+}
+
+// YBDBID represents a parsed YugabyteDB.
 type YBDBID interface {
 	Bytes() []byte
-	UUID() uuid.UUID
 	String() string
 }
 
 type defaultYBDBID struct {
 	bytes []byte
-	uuid  uuid.UUID
 	str   string
 }
 
 func (id *defaultYBDBID) Bytes() []byte {
 	return id.bytes
-}
-
-func (id *defaultYBDBID) UUID() uuid.UUID {
-	return id.uuid
 }
 
 func (id *defaultYBDBID) String() string {
@@ -36,11 +44,21 @@ func (id *defaultYBDBID) String() string {
 func TryParseFromBytes(input []byte) (YBDBID, error) {
 	aUUID := uuid.New()
 	if err := aUUID.UnmarshalBinary(input); err != nil {
+
+		// if it failed, it could be a third ID type:
+		if nonUUIDIDTypeR.Match(input) {
+			output := &defaultYBDBID{
+				bytes: make([]byte, len(input)),
+				str:   string(input),
+			}
+			copy(output.bytes, input)
+			return output, nil
+		}
+
 		return nil, err
 	}
 	output := &defaultYBDBID{
 		bytes: make([]byte, len(input)),
-		uuid:  aUUID,
 		str:   aUUID.String(),
 	}
 	copy(output.bytes, input)
@@ -51,6 +69,16 @@ func TryParseFromBytes(input []byte) (YBDBID, error) {
 // Input string can be either a literal UUID or Base64 byte input
 // as originally returned by the protobuf API.
 func TryParseFromString(input string) (YBDBID, error) {
+
+	// support third type of ID:
+	if nonUUIDIDTypeR.Match([]byte(input)) {
+		output := &defaultYBDBID{
+			bytes: make([]byte, len(input)),
+			str:   string(input),
+		}
+		copy(output.bytes, input)
+		return output, nil
+	}
 
 	// try decoding as base64:
 	maybeDecoded, err := base64.StdEncoding.DecodeString(input)
@@ -74,7 +102,6 @@ func TryParseFromString(input string) (YBDBID, error) {
 
 	output := &defaultYBDBID{
 		bytes: make([]byte, len(bys)),
-		uuid:  aUUID,
 		str:   aUUID.String(),
 	}
 	copy(output.bytes, bys)

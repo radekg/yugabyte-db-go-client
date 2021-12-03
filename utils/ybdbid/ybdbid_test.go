@@ -18,12 +18,10 @@ func TestYBDBIDParsing(t *testing.T) {
 
 		parsedBackViaBytes, err := TryParseFromBytes(parsed.Bytes())
 		assert.Nil(tt, err)
-		assert.Equal(tt, parsed.UUID(), parsedBackViaBytes.UUID())
 		assert.Equal(tt, parsed.String(), parsedBackViaBytes.String())
 
 		parsedBackViaString, err := TryParseFromString(parsed.String())
 		assert.Nil(tt, err)
-		assert.Equal(tt, parsed.UUID(), parsedBackViaString.UUID())
 		assert.Equal(tt, parsed.String(), parsedBackViaString.String())
 
 		assert.Equal(tt, validBase64YBDBID, base64.StdEncoding.EncodeToString(parsedBackViaBytes.Bytes()))
@@ -40,12 +38,10 @@ func TestYBDBIDParsing(t *testing.T) {
 
 		parsedBackViaBytes, err := TryParseFromBytes(parsed.Bytes())
 		assert.Nil(tt, err)
-		assert.Equal(tt, parsed.UUID(), parsedBackViaBytes.UUID())
 		assert.Equal(tt, parsed.String(), parsedBackViaBytes.String())
 
 		parsedBackViaString, err := TryParseFromString(parsed.String())
 		assert.Nil(tt, err)
-		assert.Equal(tt, parsed.UUID(), parsedBackViaString.UUID())
 		assert.Equal(tt, parsed.String(), parsedBackViaString.String())
 
 	})
@@ -68,6 +64,18 @@ func TestYBDBIDParsing(t *testing.T) {
 		parsed, err := TryParseFromBytes(nil)
 		assert.NotNil(tt, err)
 		assert.Nil(tt, parsed)
+	})
+
+	t.Run("it-supports non-UUID ID types", func(tt *testing.T) {
+		encodedRepresentation := "ODU4OWYyMzJjYWQxNGJiZWFmNGU4ZTA0NzEwMmYwNmI="
+		bys, err := base64.StdEncoding.DecodeString(encodedRepresentation)
+		assert.Nil(tt, err)
+		parsed, err := TryParseFromBytes(bys)
+		assert.Nil(tt, err)
+		reparsed, err := TryParseFromString(parsed.String())
+		assert.Nil(tt, err)
+		reencoded := base64.StdEncoding.EncodeToString([]byte(reparsed.String()))
+		assert.Equal(tt, encodedRepresentation, reencoded)
 	})
 
 }
