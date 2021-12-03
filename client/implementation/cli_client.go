@@ -14,6 +14,7 @@ type YBCliClient interface {
 	CheckExists(*configs.OpGetTableSchemaConfig) (*ybApi.GetTableSchemaResponsePB, error)
 	DescribeTable(*configs.OpGetTableSchemaConfig) (*ybApi.GetTableSchemaResponsePB, error)
 	GetIsLoadBalancerIdle() (*ybApi.IsLoadBalancerIdleResponsePB, error)
+	GetLeaderBlacklistCompletion() (*ybApi.GetLoadMovePercentResponsePB, error)
 	GetLoadMoveCompletion() (*ybApi.GetLoadMovePercentResponsePB, error)
 	GetMasterRegistration() (*ybApi.GetMasterRegistrationResponsePB, error)
 	GetTabletsForTable(*configs.OpGetTableLocationsConfig) (*ybApi.GetTableLocationsResponsePB, error)
