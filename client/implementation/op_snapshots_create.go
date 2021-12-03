@@ -110,7 +110,10 @@ func createSnapshotYSQL(c *defaultYBCliClient, opConfig *configs.OpSnapshotCreat
 	tableIdentifiers := []*ybApi.TableIdentifierPB{}
 	for _, tableInfo := range tablesPayload.Tables {
 		tableIdentifiers = append(tableIdentifiers, &ybApi.TableIdentifierPB{
+			// https://github.com/yugabyte/yugabyte-db/blob/d4d5688147734d1a36bbe58430f35ba4db2770f1/ent/src/yb/tools/yb-admin_client_ent.cc#L275
 			TableId: tableInfo.Id,
+			// https://github.com/yugabyte/yugabyte-db/blob/d4d5688147734d1a36bbe58430f35ba4db2770f1/ent/src/yb/tools/yb-admin_client_ent.cc#L276
+			Namespace: tableInfo.Namespace,
 		})
 	}
 
@@ -118,6 +121,13 @@ func createSnapshotYSQL(c *defaultYBCliClient, opConfig *configs.OpSnapshotCreat
 		Tables: tableIdentifiers,
 		AddIndexes: func() *bool {
 			v := false
+			return &v
+		}(),
+		// CreateSnapshot called from https://github.com/yugabyte/yugabyte-db/blob/d4d5688147734d1a36bbe58430f35ba4db2770f1/ent/src/yb/tools/yb-admin_client_ent.cc#L288
+		// and always sets transaction aware to true:
+		// https://github.com/yugabyte/yugabyte-db/blob/d4d5688147734d1a36bbe58430f35ba4db2770f1/ent/src/yb/tools/yb-admin_client_ent.cc#L247
+		TransactionAware: func() *bool {
+			v := true
 			return &v
 		}(),
 	}
