@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 
+	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -118,6 +119,11 @@ func PString(a string) *string {
 		return nil
 	}
 	return &a
+}
+
+// PYQLDatabase returns a pointer to the given input YQLDatabase.
+func PYQLDatabase(input ybApi.YQLDatabase) *ybApi.YQLDatabase {
+	return &input
 }
 
 // ReadInt reads an int from a reader.
