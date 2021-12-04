@@ -118,12 +118,12 @@ func (pk *parsedKeyspace) toProtoKeyspace() *ybApi.NamespaceIdentifierPB {
 	if yqlDatabaseType, ok := mapYQLDatabaseType(pk.YQLDatabaseType); ok {
 		return &ybApi.NamespaceIdentifierPB{
 			Name:         &pk.Keyspace,
-			DatabaseType: pYQLDatabase(yqlDatabaseType),
+			DatabaseType: PYQLDatabase(yqlDatabaseType),
 		}
 	}
 	return &ybApi.NamespaceIdentifierPB{
 		Name:         &pk.Keyspace,
-		DatabaseType: pYQLDatabase(ybApi.YQLDatabase_YQL_DATABASE_CQL),
+		DatabaseType: PYQLDatabase(ybApi.YQLDatabase_YQL_DATABASE_CQL),
 	}
 }
 
@@ -178,6 +178,7 @@ func mapRelationTypeFilter(input string) (ybApi.RelationType, bool) {
 	}
 }
 
-func pYQLDatabase(input ybApi.YQLDatabase) *ybApi.YQLDatabase {
+// PYQLDatabase returns a pointer to the given input YQLDatabase.
+func PYQLDatabase(input ybApi.YQLDatabase) *ybApi.YQLDatabase {
 	return &input
 }

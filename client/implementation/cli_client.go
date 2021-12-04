@@ -5,6 +5,7 @@ import (
 	"github.com/radekg/yugabyte-db-go-client/client/base"
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // YBCliClient is a client implementing the CLI functionality.
@@ -13,6 +14,9 @@ type YBCliClient interface {
 
 	CheckExists(*configs.OpGetTableSchemaConfig) (*ybApi.GetTableSchemaResponsePB, error)
 	DescribeTable(*configs.OpGetTableSchemaConfig) (*ybApi.GetTableSchemaResponsePB, error)
+
+	Execute(payload, response protoreflect.ProtoMessage) error
+
 	GetIsLoadBalancerIdle() (*ybApi.IsLoadBalancerIdleResponsePB, error)
 	GetLeaderBlacklistCompletion() (*ybApi.GetLoadMovePercentResponsePB, error)
 	GetLoadMoveCompletion() (*ybApi.GetLoadMovePercentResponsePB, error)
@@ -70,6 +74,10 @@ func NewYBConnectedClient(cfg *configs.YBClientConfig, logger hclog.Logger) (YBC
 
 func (c *defaultYBCliClient) Close() error {
 	return c.connectedClient.Close()
+}
+
+func (c *defaultYBCliClient) Execute(input, output protoreflect.ProtoMessage) error {
+	return c.Execute(input, output)
 }
 
 // OnConnected returns a channel which closed when the client is connected.
