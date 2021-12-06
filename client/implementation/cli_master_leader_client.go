@@ -66,6 +66,22 @@ func MasterLeaderConnectedClient(commandConfig *configs.CliConfig, logger hclog.
 					return
 				}
 
+				if masterRegistration == nil {
+					logger.Trace("master did not send with registration info",
+						"host-port", thisHostPort)
+					cliClient.Close()
+					chanErrors <- fmt.Errorf("master %s did not send registration info", thisHostPort)
+					return
+				}
+
+				if masterRegistration.Role == nil {
+					logger.Trace("master did not report its raft peer role",
+						"host-port", thisHostPort)
+					cliClient.Close()
+					chanErrors <- fmt.Errorf("master %s did not report its raft peer role", thisHostPort)
+					return
+				}
+
 				if *masterRegistration.Role != ybApi.RaftPeerPB_LEADER {
 					logger.Trace("master not leader",
 						"host-port", thisHostPort)
