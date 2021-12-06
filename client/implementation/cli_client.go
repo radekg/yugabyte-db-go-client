@@ -77,7 +77,7 @@ func (c *defaultYBCliClient) Close() error {
 }
 
 func (c *defaultYBCliClient) Execute(input, output protoreflect.ProtoMessage) error {
-	return c.Execute(input, output)
+	return c.connectedClient.Execute(input, output)
 }
 
 // OnConnected returns a channel which closed when the client is connected.
