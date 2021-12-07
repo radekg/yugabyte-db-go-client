@@ -134,8 +134,8 @@ func SetupMasters(t *testing.T, config *common.TestMasterConfiguration) TestEnvC
 
 		options := &dockertest.RunOptions{
 			Name:       containerNames[i],
-			Repository: config.YbDBDockerImage,
-			Tag:        config.YbDBDockerTag,
+			Repository: common.GetEnvOrDefault(common.DefaultYugabyteDBEnvVarImageName, config.YbDBDockerImage),
+			Tag:        common.GetEnvOrDefault(common.DefaultYugabyteDEnvVarImageVersion, config.YbDBDockerTag),
 			Mounts: []string{
 				fmt.Sprintf("%s:%s/master", masterDataDirectory, config.YbDBFsDataPath),
 			},

@@ -119,8 +119,8 @@ func SetupTServer(t *testing.T,
 
 	options := &dockertest.RunOptions{
 		Name:       config.TServerID,
-		Repository: config.YbDBDockerImage,
-		Tag:        config.YbDBDockerTag,
+		Repository: common.GetEnvOrDefault(common.DefaultYugabyteDBEnvVarImageName, config.YbDBDockerImage),
+		Tag:        common.GetEnvOrDefault(common.DefaultYugabyteDEnvVarImageVersion, config.YbDBDockerTag),
 		Mounts: []string{
 			fmt.Sprintf("%s:%s/tserver", tserverDataDirectory, config.YbDBFsDataPath),
 		},

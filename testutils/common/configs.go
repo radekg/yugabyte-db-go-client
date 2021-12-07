@@ -26,6 +26,11 @@ const (
 
 	// DefaultMasterPrefix is the default master prefix value, if no prefix specified.
 	DefaultMasterPrefix = "yb-master"
+
+	// DefaultYugabyteDBEnvVarImageName is an environment variable name used to override the default YugabyteDB docker image name.
+	DefaultYugabyteDBEnvVarImageName = "TEST_YUGABYTEDB_IMAGE_NAME"
+	// DefaultYugabyteDEnvVarImageVersion is an environment variable name used to override the default YugabyteDB docker image tag.
+	DefaultYugabyteDEnvVarImageVersion = "TEST_YUGABYTEDB_IMAGE_VERSION"
 )
 
 // TestMasterConfiguration is the master configuration for this test.
