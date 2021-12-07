@@ -39,6 +39,25 @@ func (id *defaultYBDBID) String() string {
 	return id.str
 }
 
+// MustParseFromBytes attempts graceful parsing and if there is an error,
+// force original input as an ID.
+func MustParseFromBytes(input []byte) YBDBID {
+	res, err := TryParseFromBytes(input)
+	if err != nil {
+		if input == nil {
+			return &defaultYBDBID{}
+		}
+		// just return original data:
+		output := &defaultYBDBID{
+			bytes: make([]byte, len(input)),
+			str:   string(input),
+		}
+		copy(output.bytes, input)
+		return output
+	}
+	return res
+}
+
 // TryParseFromBytes attempts to parse input bytes received from the protobuf
 // API as a YugabyteDB ID.
 func TryParseFromBytes(input []byte) (YBDBID, error) {
@@ -65,18 +84,36 @@ func TryParseFromBytes(input []byte) (YBDBID, error) {
 	return output, nil
 }
 
+// MustParseFromString attempts graceful parsing and if there is an error,
+// force original input as an ID.
+func MustParseFromString(input string) YBDBID {
+	res, err := TryParseFromString(input)
+	if err != nil {
+		// just return original data:
+		output := &defaultYBDBID{
+			bytes: make([]byte, len(input)),
+			str:   string(input),
+		}
+		copy(output.bytes, []byte(input))
+		return output
+	}
+	return res
+}
+
 // TryParseFromString attempts to parse input string as a YugabyteDB ID.
 // Input string can be either a literal UUID or Base64 byte input
 // as originally returned by the protobuf API.
 func TryParseFromString(input string) (YBDBID, error) {
 
+	inputBytes := []byte(input)
+
 	// support third type of ID:
-	if nonUUIDIDTypeR.Match([]byte(input)) {
+	if nonUUIDIDTypeR.Match(inputBytes) {
 		output := &defaultYBDBID{
-			bytes: make([]byte, len(input)),
-			str:   string(input),
+			bytes: make([]byte, len(inputBytes)),
+			str:   input,
 		}
-		copy(output.bytes, input)
+		copy(output.bytes, inputBytes)
 		return output, nil
 	}
 
