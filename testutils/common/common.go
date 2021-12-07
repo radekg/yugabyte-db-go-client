@@ -185,7 +185,7 @@ func Eventually(t *testing.T, maxTimes int, f func() error, messageLabels ...int
 		}
 		if err := f(); err != nil {
 			nTries = nTries + 1
-			t.Log(err.Error())
+			t.Log(append(messageLabels, err.Error())...)
 			<-time.After(time.Second)
 			continue
 		}

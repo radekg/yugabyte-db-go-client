@@ -1,6 +1,10 @@
 package common
 
-import "testing"
+import (
+	"testing"
+
+	dc "github.com/ory/dockertest/v3/docker"
+)
 
 const (
 	// DefaultYugabyteDBMasterImageName specifies the default Docker image name used in tests.
@@ -53,6 +57,8 @@ type TestMasterConfiguration struct {
 
 	MasterPrefix string
 
+	AdditionalPorts []dc.Port
+
 	LogRegistrationRetryErrors bool
 	NoCleanupContainers        bool
 	ReplicationFactor          int
@@ -93,6 +99,8 @@ type TestTServerConfiguration struct {
 	// if empty, a random value will be generated and assigned
 	TServerID string
 
+	AdditionalPorts []dc.Port
+
 	LogRegistrationRetryErrors bool
 	NoCleanupContainers        bool
 }
@@ -113,3 +121,48 @@ func ApplyTServerConfigDefaults(t *testing.T, cfg *TestTServerConfiguration) *Te
 	}
 	return cfg
 }
+
+// --
+
+// AllocatedAdditionalPort holds references to allocated ports when other ports are requested.
+type AllocatedAdditionalPort interface {
+	Allocated() string
+	Requested() dc.Port
+	Use()
+}
+
+type defaultAllocatedAdditionalPort struct {
+	allocated string
+	requested dc.Port
+	supplier  RandomPortSupplier
+}
+
+// NewDefaultAllocatedAdditionalPort returns an instance of a default AllocatedAdditionalPort implementation.
+func NewDefaultAllocatedAdditionalPort(r dc.Port, a string, supplier RandomPortSupplier) AllocatedAdditionalPort {
+	return &defaultAllocatedAdditionalPort{
+		allocated: a,
+		requested: r,
+		supplier:  supplier,
+	}
+}
+
+func (p *defaultAllocatedAdditionalPort) Allocated() string {
+	return p.allocated
+}
+
+func (p *defaultAllocatedAdditionalPort) Requested() dc.Port {
+	return p.requested
+}
+
+func (p *defaultAllocatedAdditionalPort) Use() {
+	p.supplier.Cleanup()
+}
+
+// AllocatedAdditionalPorts is a short hand type storing all allocated additional ports for a single container.
+type AllocatedAdditionalPorts = map[dc.Port]AllocatedAdditionalPort
+
+// MultiMasterAllocatedAdditionalPorts is a short hand type storing all allocated additional ports for masters.
+// The mapping is:
+//   master name => allocated ports
+// Master names can be obtainer from masters test context.
+type MultiMasterAllocatedAdditionalPorts = map[string]AllocatedAdditionalPorts

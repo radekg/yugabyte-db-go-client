@@ -18,7 +18,10 @@ import (
 )
 
 // TestEnvContext represents a test YugabyteDB master environment context.
+// Order of the items in MasterNames(), MasterExternalAddresses() and MasterInternalAddresses()
+// is preserved: first master name references first external and first internal address.
 type TestEnvContext interface {
+	MasterNames() []string
 	// Use these addresses when connecting to the RPC system using your
 	// own client instance.
 	MasterExternalAddresses() []string
@@ -26,6 +29,8 @@ type TestEnvContext interface {
 	MasterInternalAddresses() []string
 	// Always clean up after your run.
 	Cleanup()
+	// Other allocated ports for set of masters.
+	OtherPorts() common.MultiMasterAllocatedAdditionalPorts
 
 	// Gives access to the underlying docker pool used by this context.
 	Pool() *dockertest.Pool
@@ -63,6 +68,8 @@ func SetupMasters(t *testing.T, config *common.TestMasterConfiguration) TestEnvC
 	masterInternalAddresses := []string{}
 	containerNames := []string{}
 
+	allAdditionalAllocatedPorts := common.MultiMasterAllocatedAdditionalPorts{}
+
 	// get RF number of RPC ports:
 	for i := 0; i < config.ReplicationFactor; i = i + 1 {
 
@@ -90,6 +97,27 @@ func SetupMasters(t *testing.T, config *common.TestMasterConfiguration) TestEnvC
 		masterInternalAddresses = append(masterInternalAddresses, fmt.Sprintf("%s:%d", containerName, common.DefaultYugabyteDBMasterRPCPort))
 
 		containerNames = append(containerNames, containerName)
+
+		// allocated additional requested ports:
+		allocatedPorts := common.AllocatedAdditionalPorts{}
+		for _, additionalPort := range config.AdditionalPorts {
+			portSupplier, err := common.NewRandomPortSupplier()
+			if err != nil {
+				closeClosables(closables)
+				t.Fatalf("failed creating random port listener for port '%s': '%v'", additionalPort, err)
+			}
+			closables = prependClosable(func() {
+				t.Logf("cleanup: closing random port listener for port '%s', if not closed yet", additionalPort)
+				portSupplier.Cleanup()
+			}, closables)
+			if err := portSupplier.Discover(); err != nil {
+				closeClosables(closables)
+				t.Fatalf("failed extracting host and port from random port listener for '%s': '%v'", additionalPort, err)
+			}
+			discoveredPort, _ := portSupplier.DiscoveredPort()
+			allocatedPorts[additionalPort] = common.NewDefaultAllocatedAdditionalPort(additionalPort, discoveredPort, portSupplier)
+		}
+		allAdditionalAllocatedPorts[containerName] = allocatedPorts
 	}
 
 	// create new pool using the default Docker endpoint:
@@ -149,6 +177,18 @@ func SetupMasters(t *testing.T, config *common.TestMasterConfiguration) TestEnvC
 			masterCmd = config.YbDBCmdSupplier(masterInternalAddresses, masterInternalAddresses[i])
 		}
 
+		portBindings := map[dc.Port][]dc.PortBinding{
+			dc.Port(fmt.Sprintf("%d/tcp", common.DefaultYugabyteDBMasterRPCPort)): {{HostIP: "0.0.0.0", HostPort: fetchedRPCPorts[i]}},
+		}
+
+		if otherPorts, ok := allAdditionalAllocatedPorts[containerNames[i]]; ok {
+			for _, otherPort := range otherPorts {
+				portBindings[otherPort.Requested()] = []dc.PortBinding{
+					{HostIP: "0.0.0.0", HostPort: otherPort.Allocated()},
+				}
+			}
+		}
+
 		options := &dockertest.RunOptions{
 			Name:       containerNames[i],
 			Repository: common.GetEnvOrDefault(common.DefaultYugabyteDBEnvVarImageName, config.YbDBDockerImage),
@@ -159,14 +199,18 @@ func SetupMasters(t *testing.T, config *common.TestMasterConfiguration) TestEnvC
 			Cmd: masterCmd,
 			ExposedPorts: []string{
 				fmt.Sprintf("%d/tcp", common.DefaultYugabyteDBMasterRPCPort)},
-			PortBindings: map[dc.Port][]dc.PortBinding{
-				dc.Port(fmt.Sprintf("%d/tcp", common.DefaultYugabyteDBMasterRPCPort)): {{HostIP: "0.0.0.0", HostPort: fetchedRPCPorts[i]}},
-			},
-			Env:      config.YbDBEnv,
-			Networks: []*dockertest.Network{dockerNetwork},
+			PortBindings: portBindings,
+			Env:          config.YbDBEnv,
+			Networks:     []*dockertest.Network{dockerNetwork},
 		}
 
 		masterRPCPorts[i].Cleanup()
+
+		if otherPorts, ok := allAdditionalAllocatedPorts[containerNames[i]]; ok {
+			for _, otherPort := range otherPorts {
+				otherPort.Use()
+			}
+		}
 
 		go func(masterIndex int) {
 
@@ -255,6 +299,7 @@ outLoop:
 	}
 
 	return &testEnvContext{
+		masterNamesValue:             containerNames,
 		masterExternalAddressesValue: masterExternalAddresses,
 		masterInternalAddressesValue: masterInternalAddresses,
 		cleanupFuncValue: func() {
@@ -269,11 +314,17 @@ outLoop:
 }
 
 type testEnvContext struct {
+	masterNamesValue             []string
 	masterExternalAddressesValue []string
 	masterInternalAddressesValue []string
 	cleanupFuncValue             func()
+	otherPortsValue              common.MultiMasterAllocatedAdditionalPorts
 	poolValue                    *dockertest.Pool
 	networkValue                 *dockertest.Network
+}
+
+func (ctx *testEnvContext) MasterNames() []string {
+	return ctx.masterNamesValue
 }
 
 func (ctx *testEnvContext) MasterExternalAddresses() []string {
@@ -286,6 +337,10 @@ func (ctx *testEnvContext) MasterInternalAddresses() []string {
 
 func (ctx *testEnvContext) Cleanup() {
 	ctx.cleanupFuncValue()
+}
+
+func (ctx *testEnvContext) OtherPorts() common.MultiMasterAllocatedAdditionalPorts {
+	return ctx.otherPortsValue
 }
 
 func (ctx *testEnvContext) Pool() *dockertest.Pool {

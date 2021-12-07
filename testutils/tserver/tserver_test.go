@@ -12,6 +12,8 @@ import (
 	"github.com/radekg/yugabyte-db-go-client/testutils/common"
 	"github.com/radekg/yugabyte-db-go-client/testutils/master"
 
+	dc "github.com/ory/dockertest/v3/docker"
+
 	// Postgres library:
 	_ "github.com/lib/pq"
 )
@@ -42,11 +44,17 @@ func TestTServerIntegration(t *testing.T) {
 		return nil
 	})
 
-	// start a TServer:
+	// start a TServer and allocate an additional port:
+	otherPort := dc.Port("18080/tcp")
 	tserver1Ctx := SetupTServer(t, masterTestCtx, &common.TestTServerConfiguration{
-		TServerID: "my-tserver-1",
+		AdditionalPorts: []dc.Port{otherPort},
+		TServerID:       "my-tserver-1",
 	})
 	defer tserver1Ctx.Cleanup()
+	tserver1CtxOtherPorts := tserver1Ctx.OtherPorts()
+	if _, ok := tserver1CtxOtherPorts[otherPort]; !ok {
+		t.Fatalf("expected additional port '%s' to exist", otherPort)
+	}
 
 	// start a TServer:
 	tserver2Ctx := SetupTServer(t, masterTestCtx, &common.TestTServerConfiguration{
@@ -91,8 +99,8 @@ func TestTServerIntegration(t *testing.T) {
 			}
 			nRows = nRows + 1
 		}
-		t.Log("selected", nRows, " rows from YSQL")
+		t.Log("selected", nRows, "rows from YSQL")
 		return nil
-	})
+	}, "querying table via YSQL")
 
 }

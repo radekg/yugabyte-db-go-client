@@ -28,6 +28,8 @@ type TestEnvContext interface {
 	TServerExternalYSQLPort() string
 	// Always clean up after your run.
 	Cleanup()
+	// Other allocated ports for this TServer.
+	OtherPorts() common.AllocatedAdditionalPorts
 }
 
 // SetupTServer sets up a single YugabyteDB TServer.
@@ -98,6 +100,26 @@ func SetupTServer(t *testing.T,
 		tserverRPCBindAddress = fmt.Sprintf("%s:%d", config.TServerID, common.DefaultYugabyteDBTServerRPCPort)
 	}
 
+	// allocated additional requested ports:
+	allocatedPorts := common.AllocatedAdditionalPorts{}
+	for _, additionalPort := range config.AdditionalPorts {
+		portSupplier, err := common.NewRandomPortSupplier()
+		if err != nil {
+			closeClosables(closables)
+			t.Fatalf("failed creating random port listener for port '%s': '%v'", additionalPort, err)
+		}
+		closables = prependClosable(func() {
+			t.Logf("cleanup: closing random port listener for port '%s', if not closed yet", additionalPort)
+			portSupplier.Cleanup()
+		}, closables)
+		if err := portSupplier.Discover(); err != nil {
+			closeClosables(closables)
+			t.Fatalf("failed extracting host and port from random port listener for '%s': '%v'", additionalPort, err)
+		}
+		discoveredPort, _ := portSupplier.DiscoveredPort()
+		allocatedPorts[additionalPort] = common.NewDefaultAllocatedAdditionalPort(additionalPort, discoveredPort, portSupplier)
+	}
+
 	// start RF number of containers and wait for them:
 
 	benchStart := time.Now()
@@ -137,6 +159,16 @@ func SetupTServer(t *testing.T,
 		tserverCmd = config.YbDBCmdSupplier(mastersCtx.MasterInternalAddresses(), tserverRPCBindAddress)
 	}
 
+	portBindings := map[dc.Port][]dc.PortBinding{
+		dc.Port(fmt.Sprintf("%d/tcp", common.DefaultYugabyteDBTServerRPCPort)):  {{HostIP: "0.0.0.0", HostPort: fetchedTServerRPCPort}},
+		dc.Port(fmt.Sprintf("%d/tcp", common.DefaultYugabyteDBTServerYSQLPort)): {{HostIP: "0.0.0.0", HostPort: fetchedTServerYSQLPort}},
+	}
+	for _, allocatedPort := range allocatedPorts {
+		portBindings[allocatedPort.Requested()] = []dc.PortBinding{
+			{HostIP: "0.0.0.0", HostPort: allocatedPort.Allocated()},
+		}
+	}
+
 	options := &dockertest.RunOptions{
 		Name:       config.TServerID,
 		Repository: common.GetEnvOrDefault(common.DefaultYugabyteDBEnvVarImageName, config.YbDBDockerImage),
@@ -148,16 +180,16 @@ func SetupTServer(t *testing.T,
 		ExposedPorts: []string{
 			fmt.Sprintf("%d/tcp", common.DefaultYugabyteDBTServerRPCPort),
 			fmt.Sprintf("%d/tcp", common.DefaultYugabyteDBTServerYSQLPort)},
-		PortBindings: map[dc.Port][]dc.PortBinding{
-			dc.Port(fmt.Sprintf("%d/tcp", common.DefaultYugabyteDBTServerRPCPort)):  {{HostIP: "0.0.0.0", HostPort: fetchedTServerRPCPort}},
-			dc.Port(fmt.Sprintf("%d/tcp", common.DefaultYugabyteDBTServerYSQLPort)): {{HostIP: "0.0.0.0", HostPort: fetchedTServerYSQLPort}},
-		},
-		Env:      config.YbDBEnv,
-		Networks: []*dockertest.Network{mastersCtx.Network()},
+		PortBindings: portBindings,
+		Env:          config.YbDBEnv,
+		Networks:     []*dockertest.Network{mastersCtx.Network()},
 	}
 
 	tserverRPCPort.Cleanup()
 	tserverYSQLPort.Cleanup()
+	for _, v := range allocatedPorts {
+		v.Use()
+	}
 
 	// start the container:
 	tserver, tserverErr := mastersCtx.Pool().RunWithOptions(options, func(config *dc.HostConfig) {
@@ -247,6 +279,7 @@ func SetupTServer(t *testing.T,
 				closable()
 			}
 		},
+		otherPortsValue: allocatedPorts,
 	}
 
 }
@@ -255,6 +288,7 @@ type testEnvContext struct {
 	tServerExternalRPCPortValue  string
 	tServerExternalYSQLPortValue string
 	cleanupFuncValue             func()
+	otherPortsValue              common.AllocatedAdditionalPorts
 }
 
 func (ctx *testEnvContext) TServerExternalRPCPort() string {
@@ -267,4 +301,8 @@ func (ctx *testEnvContext) TServerExternalYSQLPort() string {
 
 func (ctx *testEnvContext) Cleanup() {
 	ctx.cleanupFuncValue()
+}
+
+func (ctx *testEnvContext) OtherPorts() common.AllocatedAdditionalPorts {
+	return ctx.otherPortsValue
 }
