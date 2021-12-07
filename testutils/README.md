@@ -23,12 +23,16 @@ import (
     "github.com/radekg/yugabyte-db-go-client/testutils/tserver"
     "github.com/radekg/yugabyte-db-go-client/client/implementation"
     "github.com/radekg/yugabyte-db-go-client/configs"
+
+    // Postgres library:
+    _ "github.com/lib/pq"
 )
 
 func TestClusterIntegration(t *testing.T) {
 
     masterTestCtx := master.SetupMasters(t, &common.TestMasterConfiguration{
         ReplicationFactor: 3,
+        MasterPrefix:      "mytest",
     })
     defer masterTestCtx.Cleanup()
 
@@ -42,12 +46,14 @@ func TestClusterIntegration(t *testing.T) {
     }
     defer client.Close()
 
-    listMastersPb, err := client.ListMasters()
-    if err != nil {
-        t.Fatal(err)
-    }
-
-    t.Log(" ========> ", listMastersPb)
+    common.Eventually(t, 15, func() error {
+        listMastersPb, err := client.ListMasters()
+        if err != nil {
+            return err
+        }
+        t.Log(" ==> Received master list", listMastersPb)
+        return nil
+    })
 
     // start a TServer:
     tserver1Ctx := tserver.SetupTServer(t, masterTestCtx, &common.TestTServerConfiguration{
@@ -67,12 +73,40 @@ func TestClusterIntegration(t *testing.T) {
     })
     defer tserver3Ctx.Cleanup()
 
-    listTServersPb, err := client.ListTabletServers(&configs.OpListTabletServersConfig{})
-    if err != nil {
-        t.Fatal(err)
-    }
+    common.Eventually(t, 15, func() error {
+        listTServersPb, err := client.ListTabletServers(&configs.OpListTabletServersConfig{})
+        if err != nil {
+            return err
+        }
+        t.Log(" ==> Received TServer list", listTServersPb)
+        return nil
+    })
 
-    t.Log(" ==> Received TServer list", listTServersPb)
+    // try YSQL connection:
+    t.Logf("connecting to YSQL at 127.0.0.1:%s", tserver1Ctx.TServerExternalYSQLPort())
+    db, sqlOpenErr := sql.Open("postgres", fmt.Sprintf("host=127.0.0.1 port=%s user=%s password=%s dbname=%s sslmode=disable",
+        tserver1Ctx.TServerExternalYSQLPort(), "yugabyte", "yugabyte", "yugabyte"))
+    if sqlOpenErr != nil {
+        t.Fatal("failed connecting to YSQL, reason:", sqlOpenErr)
+    }
+    defer db.Close()
+    t.Log("connected to YSQL")
+
+    common.Eventually(t, 15, func() error {
+        rows, sqlQueryErr := db.Query("select table_name from information_schema.tables")
+        if sqlQueryErr != nil {
+            return sqlQueryErr
+        }
+        nRows := 0
+        for {
+            if !rows.Next() {
+                break
+            }
+            nRows = nRows + 1
+        }
+        t.Log("selected", nRows, " rows from YSQL")
+        return nil
+    })
 
 }
 ```
