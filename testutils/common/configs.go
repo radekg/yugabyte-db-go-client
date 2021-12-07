@@ -33,6 +33,15 @@ const (
 	DefaultYugabyteDEnvVarImageVersion = "TEST_YUGABYTEDB_IMAGE_VERSION"
 )
 
+// MasterInternalAddresses is a list of internal masters addresses used to form the cluster.
+type MasterInternalAddresses = []string
+
+// DockerCommand is the YugabyteDB Docker image command.
+type DockerCommand = []string
+
+// RPCBindAddress is the bind address used by the test container.
+type RPCBindAddress = string
+
 // TestMasterConfiguration is the master configuration for this test.
 type TestMasterConfiguration struct {
 	YbDBContainerUser string
@@ -40,6 +49,7 @@ type TestMasterConfiguration struct {
 	YbDBFsDataPath    string
 	YbDBDockerImage   string
 	YbDBDockerTag     string
+	YbDBCmdSupplier   func(MasterInternalAddresses, RPCBindAddress) DockerCommand
 
 	MasterPrefix string
 
@@ -78,6 +88,7 @@ type TestTServerConfiguration struct {
 	YbDBFsDataPath    string
 	YbDBDockerImage   string
 	YbDBDockerTag     string
+	YbDBCmdSupplier   func(MasterInternalAddresses, RPCBindAddress) DockerCommand
 
 	// if empty, a random value will be generated and assigned
 	TServerID string

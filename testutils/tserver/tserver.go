@@ -117,6 +117,26 @@ func SetupTServer(t *testing.T,
 
 	t.Log("TServer data directory created...", tserverDataDirectory)
 
+	tserverCmd := []string{fmt.Sprintf("/home/%s/bin/yb-tserver", config.YbDBContainerUser),
+		"--callhome_enabled=false",
+		fmt.Sprintf("--fs_data_dirs=%s/tserver", config.YbDBFsDataPath),
+		fmt.Sprintf("--tserver_master_addrs=%s", strings.Join(mastersCtx.MasterInternalAddresses(), ",")),
+		fmt.Sprintf("--rpc_bind_addresses=%s", tserverRPCBindAddress),
+		"--logtostderr",
+		"--enable_ysql",
+		"--ysql_enable_auth",
+		"--minloglevel=1",
+		"--placement_cloud=dockertest",
+		"--placement_region=test1",
+		"--placement_zone=test1a",
+		"--stop_on_parent_termination",
+		"--undefok=stop_on_parent_termination",
+	}
+
+	if config.YbDBCmdSupplier != nil {
+		tserverCmd = config.YbDBCmdSupplier(mastersCtx.MasterInternalAddresses(), tserverRPCBindAddress)
+	}
+
 	options := &dockertest.RunOptions{
 		Name:       config.TServerID,
 		Repository: common.GetEnvOrDefault(common.DefaultYugabyteDBEnvVarImageName, config.YbDBDockerImage),
@@ -124,21 +144,7 @@ func SetupTServer(t *testing.T,
 		Mounts: []string{
 			fmt.Sprintf("%s:%s/tserver", tserverDataDirectory, config.YbDBFsDataPath),
 		},
-		Cmd: []string{fmt.Sprintf("/home/%s/bin/yb-tserver", config.YbDBContainerUser),
-			"--callhome_enabled=false",
-			fmt.Sprintf("--fs_data_dirs=%s/tserver", config.YbDBFsDataPath),
-			fmt.Sprintf("--tserver_master_addrs=%s", strings.Join(mastersCtx.MasterInternalAddresses(), ",")),
-			fmt.Sprintf("--rpc_bind_addresses=%s", tserverRPCBindAddress),
-			"--logtostderr",
-			"--enable_ysql",
-			"--ysql_enable_auth",
-			"--minloglevel=1",
-			"--placement_cloud=dockertest",
-			"--placement_region=test1",
-			"--placement_zone=test1a",
-			"--stop_on_parent_termination",
-			"--undefok=stop_on_parent_termination",
-		},
+		Cmd: tserverCmd,
 		ExposedPorts: []string{
 			fmt.Sprintf("%d/tcp", common.DefaultYugabyteDBTServerRPCPort),
 			fmt.Sprintf("%d/tcp", common.DefaultYugabyteDBTServerYSQLPort)},

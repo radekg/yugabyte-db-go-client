@@ -132,6 +132,23 @@ func SetupMasters(t *testing.T, config *common.TestMasterConfiguration) TestEnvC
 
 		t.Log("Master data directory created...", masterDataDirectory)
 
+		masterCmd := []string{fmt.Sprintf("/home/%s/bin/yb-master", config.YbDBContainerUser),
+			"--callhome_enabled=false",
+			fmt.Sprintf("--fs_data_dirs=%s/master", config.YbDBFsDataPath),
+			fmt.Sprintf("--master_addresses=%s", strings.Join(masterInternalAddresses, ",")),
+			fmt.Sprintf("--rpc_bind_addresses=%s", masterInternalAddresses[i]),
+			"--logtostderr",
+			"--minloglevel=1",
+			"--placement_cloud=dockertest",
+			"--stop_on_parent_termination",
+			"--undefok=stop_on_parent_termination",
+			"--replication_factor=1",
+		}
+
+		if config.YbDBCmdSupplier != nil {
+			masterCmd = config.YbDBCmdSupplier(masterInternalAddresses, masterInternalAddresses[i])
+		}
+
 		options := &dockertest.RunOptions{
 			Name:       containerNames[i],
 			Repository: common.GetEnvOrDefault(common.DefaultYugabyteDBEnvVarImageName, config.YbDBDockerImage),
@@ -139,18 +156,7 @@ func SetupMasters(t *testing.T, config *common.TestMasterConfiguration) TestEnvC
 			Mounts: []string{
 				fmt.Sprintf("%s:%s/master", masterDataDirectory, config.YbDBFsDataPath),
 			},
-			Cmd: []string{fmt.Sprintf("/home/%s/bin/yb-master", config.YbDBContainerUser),
-				"--callhome_enabled=false",
-				fmt.Sprintf("--fs_data_dirs=%s/master", config.YbDBFsDataPath),
-				fmt.Sprintf("--master_addresses=%s", strings.Join(masterInternalAddresses, ",")),
-				fmt.Sprintf("--rpc_bind_addresses=%s", masterInternalAddresses[i]),
-				"--logtostderr",
-				"--minloglevel=1",
-				"--placement_cloud=dockertest",
-				"--stop_on_parent_termination",
-				"--undefok=stop_on_parent_termination",
-				"--replication_factor=1",
-			},
+			Cmd: masterCmd,
 			ExposedPorts: []string{
 				fmt.Sprintf("%d/tcp", common.DefaultYugabyteDBMasterRPCPort)},
 			PortBindings: map[dc.Port][]dc.PortBinding{
