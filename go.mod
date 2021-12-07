@@ -5,6 +5,10 @@ go 1.16
 require (
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-hclog v0.16.2
+	// pq used in tests:
+	github.com/lib/pq v1.9.0
+	// dockertest/v3 used in tests:
+	github.com/ory/dockertest/v3 v3.8.1
 	github.com/radekg/yugabyte-db-go-proto/v2 v2.11.0-2
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5

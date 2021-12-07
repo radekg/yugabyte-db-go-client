@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := build
 
-.PHONY: clean build docker-image git-tag
+.PHONY: clean build docker-image test git-tag
 
 BINARY        ?= ybdb-go-cli
 SOURCES        = $(shell find . -name '*.go' | grep -v /vendor/)
@@ -15,10 +15,13 @@ DOCKER_IMAGE_REPO ?= local/
 CURRENT_DIR=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 TAG_VERSION ?= $(shell cat $(CURRENT_DIR)/.version)
 
+TEST_TIMEOUT ?=120s
+
 default: build
 
 test:
-	go test -v -count=1 ./...
+	go clean -testcache
+	go test -timeout ${TEST_TIMEOUT} -cover -v ./...
 
 build: build/$(BINARY)
 
