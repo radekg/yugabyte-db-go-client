@@ -43,8 +43,8 @@ func (tn *ybTableName) hasTable() bool {
 	return tn.TableName != ""
 }
 
-// Import snapshot.
-func (c *defaultYBCliClient) SnapshotsImport(opConfig *configs.OpSnapshotImportConfig) (*ybApi.ImportSnapshotMetaResponsePB, error) {
+// Pre-process snapshot import metadata file.
+func (c *defaultYBCliClient) PreProcessSnapshotsImport(opConfig *configs.OpSnapshotImportConfig) (*ybApi.ImportSnapshotMetaRequestPB, error) {
 
 	givenKeyspace := ""
 	if opConfig.Keyspace != "" {
@@ -163,8 +163,18 @@ func (c *defaultYBCliClient) SnapshotsImport(opConfig *configs.OpSnapshotImportC
 		}
 	}
 
-	payload := &ybApi.ImportSnapshotMetaRequestPB{
+	return &ybApi.ImportSnapshotMetaRequestPB{
 		Snapshot: snapshotInfo,
+	}, nil
+
+}
+
+// Import snapshot.
+func (c *defaultYBCliClient) SnapshotsImport(opConfig *configs.OpSnapshotImportConfig) (*ybApi.ImportSnapshotMetaResponsePB, error) {
+
+	payload, err := c.PreProcessSnapshotsImport(opConfig)
+	if err != nil {
+		return nil, err
 	}
 	responsePayload := &ybApi.ImportSnapshotMetaResponsePB{}
 	if err := c.connectedClient.Execute(payload, responsePayload); err != nil {

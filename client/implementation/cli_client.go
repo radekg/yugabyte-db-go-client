@@ -42,6 +42,7 @@ type YBCliClient interface {
 	SnapshotsDeleteSchedule(*configs.OpSnapshotDeleteScheduleConfig) (*ybApi.DeleteSnapshotScheduleResponsePB, error)
 	SnapshotsDelete(*configs.OpSnapshotDeleteConfig) (*ybApi.DeleteSnapshotResponsePB, error)
 	SnapshotsExport(*configs.OpSnapshotExportConfig) (*SnapshotExportData, error)
+	PreProcessSnapshotsImport(*configs.OpSnapshotImportConfig) (*ybApi.ImportSnapshotMetaRequestPB, error)
 	SnapshotsImport(*configs.OpSnapshotImportConfig) (*ybApi.ImportSnapshotMetaResponsePB, error)
 	SnapshotsListSchedules(*configs.OpSnapshotListSchedulesConfig) (*ybApi.ListSnapshotSchedulesResponsePB, error)
 	SnapshotsListRestorations(*configs.OpSnapshotListRestorationsConfig) (*ybApi.ListSnapshotRestorationsResponsePB, error)
