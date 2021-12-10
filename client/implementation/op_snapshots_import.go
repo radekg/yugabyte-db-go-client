@@ -43,8 +43,8 @@ func (tn *ybTableName) hasTable() bool {
 	return tn.TableName != ""
 }
 
-// Pre-process snapshot import metadata file.
-func (c *defaultYBCliClient) PreProcessSnapshotsImport(opConfig *configs.OpSnapshotImportConfig) (*ybApi.ImportSnapshotMetaRequestPB, error) {
+// Pre-process snapshot import metadata file from input bytes.
+func (c *defaultYBCliClient) PreProcessSnapshotsImportFromBytes(opConfig *configs.OpSnapshotImportConfig, rawProtoBytes []byte) (*ybApi.ImportSnapshotMetaRequestPB, error) {
 
 	givenKeyspace := ""
 	if opConfig.Keyspace != "" {
@@ -55,19 +55,6 @@ func (c *defaultYBCliClient) PreProcessSnapshotsImport(opConfig *configs.OpSnaps
 	tables := []*ybTableName{}
 	for _, tableName := range opConfig.TableName {
 		tables = append(tables, newYBTableName(opConfig.Keyspace, tableName))
-	}
-
-	statResult, err := os.Stat(opConfig.FilePath)
-	if err != nil {
-		return nil, err
-	}
-	if statResult.IsDir() {
-		return nil, fmt.Errorf("path %s points at a directory", opConfig.FilePath)
-	}
-
-	rawProtoBytes, err := ioutil.ReadFile(opConfig.FilePath)
-	if err != nil {
-		return nil, err
 	}
 
 	snapshotInfo := &ybApi.SnapshotInfoPB{}
@@ -169,10 +156,28 @@ func (c *defaultYBCliClient) PreProcessSnapshotsImport(opConfig *configs.OpSnaps
 
 }
 
+// Pre-process snapshot import metadata file.
+func (c *defaultYBCliClient) PreProcessSnapshotsImportFromFile(opConfig *configs.OpSnapshotImportConfig) (*ybApi.ImportSnapshotMetaRequestPB, error) {
+	statResult, err := os.Stat(opConfig.FilePath)
+	if err != nil {
+		return nil, err
+	}
+	if statResult.IsDir() {
+		return nil, fmt.Errorf("path %s points at a directory", opConfig.FilePath)
+	}
+
+	rawProtoBytes, err := ioutil.ReadFile(opConfig.FilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.PreProcessSnapshotsImportFromBytes(opConfig, rawProtoBytes)
+}
+
 // Import snapshot.
 func (c *defaultYBCliClient) SnapshotsImport(opConfig *configs.OpSnapshotImportConfig) (*ybApi.ImportSnapshotMetaResponsePB, error) {
 
-	payload, err := c.PreProcessSnapshotsImport(opConfig)
+	payload, err := c.PreProcessSnapshotsImportFromFile(opConfig)
 	if err != nil {
 		return nil, err
 	}
