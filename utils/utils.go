@@ -121,11 +121,6 @@ func PString(a string) *string {
 	return &a
 }
 
-// PYQLDatabase returns a pointer to the given input YQLDatabase.
-func PYQLDatabase(input ybApi.YQLDatabase) *ybApi.YQLDatabase {
-	return &input
-}
-
 // ReadInt reads an int from a reader.
 func ReadInt(reader io.Reader) (int, error) {
 	intBuf := make([]byte, 4)
@@ -175,4 +170,21 @@ func computeUInt32SizeNoTag(value int) int {
 		return 4
 	}
 	return 5
+}
+
+// == YugabyteDB types
+
+// PAppStatusErrorCode returns a pointer to the given input AppStatusErrorCode.
+func PAppStatusErrorCode(input ybApi.AppStatusPB_ErrorCode) *ybApi.AppStatusPB_ErrorCode {
+	return &input
+}
+
+// PYQLDatabase returns a pointer to the given input YQLDatabase.
+func PYQLDatabase(input ybApi.YQLDatabase) *ybApi.YQLDatabase {
+	return &input
+}
+
+// PMasterErrorCode returns a pointer to the given input MasterErrorCode.
+func PMasterErrorCode(input ybApi.MasterErrorPB_Code) *ybApi.MasterErrorPB_Code {
+	return &input
 }
