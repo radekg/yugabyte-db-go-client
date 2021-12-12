@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/radekg/yugabyte-db-go-client/configs"
+	clientErrors "github.com/radekg/yugabyte-db-go-client/errors"
 	"github.com/radekg/yugabyte-db-go-client/utils"
 	"github.com/radekg/yugabyte-db-go-client/utils/ybdbid"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
@@ -36,6 +37,9 @@ func (c *defaultYBCliClient) SnapshotsExport(opConfig *configs.OpSnapshotExportC
 	responsePayload := &ybApi.ListSnapshotsResponsePB{}
 	if err := c.connectedClient.Execute(payload, responsePayload); err != nil {
 		return nil, err
+	}
+	if responsePayload.Error != nil {
+		return nil, clientErrors.NewMasterError(responsePayload.Error)
 	}
 
 	if len(responsePayload.Snapshots) > 1 {

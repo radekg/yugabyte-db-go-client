@@ -2,6 +2,7 @@ package implementation
 
 import (
 	"github.com/radekg/yugabyte-db-go-client/configs"
+	clientErrors "github.com/radekg/yugabyte-db-go-client/errors"
 	"github.com/radekg/yugabyte-db-go-client/utils"
 	"github.com/radekg/yugabyte-db-go-client/utils/ybdbid"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
@@ -15,6 +16,9 @@ func (c *defaultYBCliClient) ModifyPlacementInfo(opConfig *configs.OpModifyPlace
 	responseCurrent := &ybApi.GetMasterClusterConfigResponsePB{}
 	if err := c.connectedClient.Execute(payloadCurrent, responseCurrent); err != nil {
 		return nil, err
+	}
+	if responseCurrent.Error != nil {
+		return nil, clientErrors.NewMasterError(responseCurrent.Error)
 	}
 
 	sysClusterConfigEntry := responseCurrent.ClusterConfig
@@ -65,5 +69,5 @@ func (c *defaultYBCliClient) ModifyPlacementInfo(opConfig *configs.OpModifyPlace
 	if err := c.connectedClient.Execute(payload, responsePayload); err != nil {
 		return nil, err
 	}
-	return responsePayload, nil
+	return responsePayload, clientErrors.NewMasterError(responseCurrent.Error)
 }

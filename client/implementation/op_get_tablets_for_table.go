@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/radekg/yugabyte-db-go-client/configs"
+	clientErrors "github.com/radekg/yugabyte-db-go-client/errors"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
 
@@ -23,8 +24,8 @@ func (c *defaultYBCliClient) GetTabletsForTable(opConfig *configs.OpGetTableLoca
 	if err := c.connectedClient.Execute(payloadListTables, responseListTablesPayload); err != nil {
 		return nil, err
 	}
-	if err := responseListTablesPayload.GetError(); err != nil {
-		return nil, fmt.Errorf(err.String())
+	if responseListTablesPayload.Error != nil {
+		return nil, clientErrors.NewMasterError(responseListTablesPayload.Error)
 	}
 
 	for _, tableInfo := range responseListTablesPayload.Tables {

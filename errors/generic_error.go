@@ -6,13 +6,11 @@ import (
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
 
-// MasterError is an error representation of the MasterErrorPB.
-type MasterError struct {
-	Code   *ybApi.MasterErrorPB_Code
+type genericError struct {
 	Status *ybApi.AppStatusPB
 }
 
-func (e *MasterError) statusToString() string {
+func (e *genericError) statusToString() string {
 	if e.Status == nil {
 		return "status: <unknown>"
 	}
@@ -35,28 +33,4 @@ func (e *MasterError) statusToString() string {
 		}
 	}
 	return errString
-}
-
-func (e *MasterError) Error() string {
-	code := int32(1)
-	codeName := ybApi.MasterErrorPB_Code_name[code]
-	if e.Code != nil {
-		if v, ok := ybApi.MasterErrorPB_Code_name[int32(*e.Code)]; ok {
-			codeName = v
-			code = int32(*e.Code)
-		}
-	}
-	return fmt.Sprintf("rpc error: code: %d (%s), %s",
-		code, codeName, e.statusToString())
-}
-
-// ToError converts MasterErrorPB into an error.
-func ToError(genericError *ybApi.MasterErrorPB) error {
-	if genericError == nil {
-		return nil
-	}
-	return &MasterError{
-		Code:   genericError.Code,
-		Status: genericError.Status,
-	}
 }

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/radekg/yugabyte-db-go-client/configs"
+	clientErrors "github.com/radekg/yugabyte-db-go-client/errors"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
 
@@ -33,9 +34,11 @@ func (c *defaultYBCliClient) MasterLeaderStepDown(opConfig *configs.OpMMasterLea
 	if err := c.connectedClient.Execute(payload, responsePayload); err != nil {
 		return nil, err
 	}
-	if err := responsePayload.GetError(); err != nil {
-		return nil, fmt.Errorf(err.String())
+	if responsePayload.Error != nil {
+		return nil, clientErrors.NewTabletServerError(responsePayload.Error)
 	}
+
+	// TODO: this does not belong here...
 	continuousErrors := 0
 	var registration *ybApi.GetMasterRegistrationResponsePB
 topExit:

@@ -2,6 +2,7 @@ package implementation
 
 import (
 	"github.com/radekg/yugabyte-db-go-client/configs"
+	clientErrors "github.com/radekg/yugabyte-db-go-client/errors"
 	"github.com/radekg/yugabyte-db-go-client/utils"
 	"github.com/radekg/yugabyte-db-go-client/utils/relativetime"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
@@ -61,5 +62,5 @@ func (c *defaultYBCliClient) SnapshotsCreateSchedule(opConfig *configs.OpSnapsho
 		return nil, err
 	}
 
-	return responsePayload, nil
+	return responsePayload, clientErrors.NewMasterError(responsePayload.Error)
 }

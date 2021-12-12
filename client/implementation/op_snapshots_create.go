@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/radekg/yugabyte-db-go-client/configs"
+	clientErrors "github.com/radekg/yugabyte-db-go-client/errors"
 	"github.com/radekg/yugabyte-db-go-client/utils"
 	"github.com/radekg/yugabyte-db-go-client/utils/ybdbid"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
@@ -90,7 +91,7 @@ func createSnapshotYCQL(c *defaultYBCliClient, opConfig *configs.OpSnapshotCreat
 		return nil, err
 	}
 
-	return responsePayload, nil
+	return responsePayload, clientErrors.NewMasterError(responsePayload.Error)
 }
 
 func createSnapshotYSQL(c *defaultYBCliClient, opConfig *configs.OpSnapshotCreateConfig, ns *parsedKeyspace) (*ybApi.CreateSnapshotResponsePB, error) {
@@ -127,5 +128,5 @@ func createSnapshotYSQL(c *defaultYBCliClient, opConfig *configs.OpSnapshotCreat
 		return nil, err
 	}
 
-	return responsePayload, nil
+	return responsePayload, clientErrors.NewMasterError(responsePayload.Error)
 }

@@ -184,7 +184,27 @@ func PYQLDatabase(input ybApi.YQLDatabase) *ybApi.YQLDatabase {
 	return &input
 }
 
+// PCDCErrorCode returns a pointer to the given input CDCErrorCode.
+func PCDCErrorCode(input ybApi.CDCErrorPB_Code) *ybApi.CDCErrorPB_Code {
+	return &input
+}
+
+// PConsensusErrorCode returns a pointer to the given input ConsensusErrorCode.
+func PConsensusErrorCode(input ybApi.ConsensusErrorPB_Code) *ybApi.ConsensusErrorPB_Code {
+	return &input
+}
+
 // PMasterErrorCode returns a pointer to the given input MasterErrorCode.
 func PMasterErrorCode(input ybApi.MasterErrorPB_Code) *ybApi.MasterErrorPB_Code {
+	return &input
+}
+
+// PRemoteBootstrapErrorCode returns a pointer to the given input RemoteBootstrapErrorCode.
+func PRemoteBootstrapErrorCode(input ybApi.RemoteBootstrapErrorPB_Code) *ybApi.RemoteBootstrapErrorPB_Code {
+	return &input
+}
+
+// PTableServerErrorCode returns a pointer to the given input TableServerErrorCode.
+func PTableServerErrorCode(input ybApi.TabletServerErrorPB_Code) *ybApi.TabletServerErrorPB_Code {
 	return &input
 }

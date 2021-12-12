@@ -2,6 +2,7 @@ package implementation
 
 import (
 	"github.com/radekg/yugabyte-db-go-client/configs"
+	clientErrors "github.com/radekg/yugabyte-db-go-client/errors"
 	"github.com/radekg/yugabyte-db-go-client/utils"
 	"github.com/radekg/yugabyte-db-go-client/utils/relativetime"
 	"github.com/radekg/yugabyte-db-go-client/utils/ybdbid"
@@ -45,5 +46,5 @@ func (c *defaultYBCliClient) SnapshotsRestore(opConfig *configs.OpSnapshotRestor
 		return nil, err
 	}
 
-	return responsePayload, nil
+	return responsePayload, clientErrors.NewMasterError(responsePayload.Error)
 }

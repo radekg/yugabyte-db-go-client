@@ -84,15 +84,10 @@ loop:
 		}
 	}
 
-	restoreResponse, err := c.SnapshotsRestore(&configs.OpSnapshotRestoreConfig{
+	return c.SnapshotsRestore(&configs.OpSnapshotRestoreConfig{
 		SnapshotID:    suitableYbDbID.String(),
 		RestoreTarget: opConfig.RestoreTarget,
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	return restoreResponse, nil
 }
 
 func (c *defaultYBCliClient) suitableSnapshotID(scheduleID string, restoreAt uint64) ([]byte, error) {
