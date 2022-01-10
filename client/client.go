@@ -1,13 +1,16 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/radekg/yugabyte-db-go-client/configs"
+	clientErrors "github.com/radekg/yugabyte-db-go-client/errors"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
@@ -25,9 +28,11 @@ type YBClient interface {
 }
 
 var (
-	errAlreadyConnected = fmt.Errorf("client: already connected")
-	errConnecting       = fmt.Errorf("client: connecting")
-	errNoClient         = fmt.Errorf("client: no client")
+	errAlreadyConnected  = fmt.Errorf("client: already connected")
+	errConnecting        = fmt.Errorf("client: connecting")
+	errLeaderWaitTimeout = fmt.Errorf("client: leader wait timed out")
+	errNoClient          = fmt.Errorf("client: no client")
+	errNotReconnected    = fmt.Errorf("client: reconnect failed")
 )
 
 type defaultYBClient struct {
@@ -41,7 +46,7 @@ type defaultYBClient struct {
 // NewYBClient constructs a new instance of the high-level YugabyteDB client.
 func NewYBClient(config *configs.YBClientConfig, logger hclog.Logger) YBClient {
 	return &defaultYBClient{
-		config: config,
+		config: config.WithDefaults(),
 		lock:   &sync.Mutex{},
 		logger: logger,
 	}
@@ -50,14 +55,10 @@ func NewYBClient(config *configs.YBClientConfig, logger hclog.Logger) YBClient {
 func (c *defaultYBClient) Close() error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-
 	if c.connectedClient == nil {
 		return errNoClient
 	}
-
-	closeError := c.connectedClient.Close()
-	c.connectedClient = nil
-	return closeError
+	return c.closeUnsafe()
 }
 
 func (c *defaultYBClient) Connect() error {
@@ -71,6 +72,145 @@ func (c *defaultYBClient) Connect() error {
 	if c.connectedClient != nil {
 		return errAlreadyConnected
 	}
+
+	return c.connectUnsafe()
+}
+
+func (c *defaultYBClient) Execute(payload, response protoreflect.ProtoMessage) error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.connectedClient == nil {
+		return errNoClient
+	}
+
+	currentAttempt := int32(1)
+
+	for {
+
+		executeErr := c.connectedClient.Execute(payload, response)
+
+		// the response might have an error in it, check if this is a response returning ybApi.MasterErrorPB
+		if tResponse, ok := response.(clientErrors.AbstractMasterErrorResponse); ok {
+			// was there an error in that response?
+			if masterError := clientErrors.NewMasterError(tResponse.GetError()); masterError != nil {
+				// we know it was not nil because masterError was not nil
+				responseError := tResponse.GetError()
+				if responseError.Code != nil {
+					responseErrorCode := *responseError.Code
+					if int32(responseErrorCode.Number()) == int32(ybApi.MasterErrorPB_NOT_THE_LEADER.Number()) {
+						c.logger.Warn("execute: response with NOT_THE_LEADER master status code, reconnect", "reason", masterError)
+						executeErr = &clientErrors.RequiresReconnectError{
+							Cause: masterError,
+						}
+					}
+				}
+			}
+		}
+
+		if executeErr == nil {
+			return nil
+		}
+
+		if c.config.MaxExecuteRetries <= configs.NoExecuteRetry {
+			reportErr := executeErr
+			if tReconnectError, ok := executeErr.(*clientErrors.RequiresReconnectError); ok {
+				reportErr = tReconnectError.Cause
+			}
+			c.logger.Error("execute: retry disabled, not retrying", "reason", reportErr)
+			return reportErr
+		}
+
+		if currentAttempt > c.config.MaxExecuteRetries {
+			reportErr := executeErr
+			if tReconnectError, ok := executeErr.(*clientErrors.RequiresReconnectError); ok {
+				reportErr = tReconnectError.Cause
+			}
+			c.logger.Error("execute: failed for a maximum number of allowed attempts, giving up", "reason", reportErr)
+			return reportErr
+		}
+
+		// broken pipe qualifies for immediate retry:
+		if errors.Is(executeErr, syscall.EPIPE) {
+			executeErr = &clientErrors.RequiresReconnectError{
+				Cause: executeErr,
+			}
+		}
+
+		if _, ok := executeErr.(*clientErrors.UnprocessableResponseError); ok {
+			// complete payload has been read from the server
+			// but payload could not be deserialized as protobuf,
+			// this qualifies for immediate retry:
+			currentAttempt = currentAttempt + 1
+			<-time.After(c.config.RetryInterval)
+			continue
+		}
+
+		if tReconnectError, ok := executeErr.(*clientErrors.RequiresReconnectError); ok {
+
+			if c.config.MaxReconnectAttempts <= configs.NoReconnectAttempts {
+				c.logger.Error("execute: not reconnecting after error, max reconnect attempts not set",
+					"reason", tReconnectError.Cause)
+				return tReconnectError.Cause
+			}
+
+			c.logger.Debug("execute: attempting reconnect due to an error",
+				"reason", tReconnectError.Cause)
+
+			// reconnect:
+			currentReconnectAttempt := int32(1)
+			reconnected := false
+			for {
+
+				reconnectErr := c.reconnect()
+
+				if reconnectErr == nil {
+					reconnected = true
+					break
+				}
+
+				if currentReconnectAttempt == c.config.MaxReconnectAttempts {
+					break
+				}
+
+				c.logger.Error("execute: failed reconnect",
+					"attempt", currentReconnectAttempt,
+					"max-attempts", c.config.MaxReconnectAttempts,
+					"reason", reconnectErr)
+
+				currentReconnectAttempt = currentReconnectAttempt + 1
+				<-time.After(c.config.ReconnectRetryInterval)
+
+			}
+
+			if !reconnected {
+				c.logger.Error("execute: failed reconnect consecutive maximum reconnect attempts",
+					"max-attempts", c.config.MaxReconnectAttempts,
+					"reason", tReconnectError.Cause)
+				return errNotReconnected
+			}
+
+			// retry:
+			<-time.After(c.config.RetryInterval)
+			currentAttempt = currentAttempt + 1
+			continue
+
+		} // reconnect handling / end
+
+		// in case of any other error, no recovery:
+		return executeErr
+
+	}
+
+}
+
+func (c *defaultYBClient) closeUnsafe() error {
+	closeError := c.connectedClient.Close()
+	c.connectedClient = nil
+	return closeError
+}
+
+func (c *defaultYBClient) connectUnsafe() error {
 
 	tlsConfig, err := c.config.TLSConfig()
 	if err != nil {
@@ -163,7 +303,7 @@ func (c *defaultYBClient) Connect() error {
 			atomic.AddUint64(&done, 1)
 			if atomic.LoadUint64(&done) == max {
 				c.isConnecting = false
-				return fmt.Errorf("no reachable leaders")
+				return &clientErrors.NoLeaderError{}
 			}
 		case connectedClient := <-chanConnectedClient:
 			c.connectedClient = connectedClient
@@ -171,17 +311,15 @@ func (c *defaultYBClient) Connect() error {
 			return nil
 		case <-time.After(c.config.OpTimeout):
 			c.isConnecting = false
-			return fmt.Errorf("failed to connect to a leader master within timeout")
+			return errLeaderWaitTimeout
 		}
 	}
 
 }
 
-func (c *defaultYBClient) Execute(payload, response protoreflect.ProtoMessage) error {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	if c.connectedClient == nil {
-		return errNoClient
+func (c *defaultYBClient) reconnect() error {
+	if err := c.closeUnsafe(); err != nil {
+		return err
 	}
-	return c.connectedClient.Execute(payload, response)
+	return c.connectUnsafe()
 }

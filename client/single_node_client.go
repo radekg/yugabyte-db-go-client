@@ -315,8 +315,10 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 
 	protoErr2 := utils.DeserializeProto(responsePayloadBuf, m)
 	if protoErr2 != nil {
-		opLogger.Error("failed unmarshalling response payload", "reason", protoErr2, "consumed-data", string(responsePayloadBuf))
-		return err
+		return &errors.UnprocessableResponseError{
+			Cause:           protoErr2,
+			ConsumedPayload: responsePayloadBuf,
+		}
 	}
 
 	return nil

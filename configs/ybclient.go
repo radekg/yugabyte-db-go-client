@@ -23,15 +23,57 @@ type YBSingleNodeClientConfig struct {
 	OpTimeout      uint32
 }
 
+const (
+	// DefaultMaxExecuteRetries is the default maximum number of retries for a failed execute.
+	DefaultMaxExecuteRetries int32 = 10
+	// DefaultMaxReconnectAttempts is the default max reconnect attempts value.
+	DefaultMaxReconnectAttempts int32 = 10
+	// DefaultOpTimeout is the default operation timeout value.
+	DefaultOpTimeout = time.Second * 60
+	// DefaultReconnectRetryInterval is the default reconnect retry interval value.
+	DefaultReconnectRetryInterval = time.Second
+	// DefaultRetryInterval is the default retry interval value.
+	DefaultRetryInterval = time.Second
+
+	// NoExecuteRetry is a magic value disabling retry of failed execute.
+	NoExecuteRetry int32 = -1
+	// NoReconnectAttempts is a magic value disabling reconnect attempts.
+	NoReconnectAttempts int32 = -1
+)
+
 // YBClientConfig represents the shared CLI config.
 type YBClientConfig struct {
 	tlsConfig *tls.Config
 
-	MasterHostPort    []string
-	OpTimeout         time.Duration
-	TLSCaCertFilePath string
-	TLSCertFilePath   string
-	TLSKeyFilePath    string
+	MasterHostPort         []string
+	OpTimeout              time.Duration
+	MaxExecuteRetries      int32
+	MaxReconnectAttempts   int32
+	ReconnectRetryInterval time.Duration
+	RetryInterval          time.Duration
+	TLSCaCertFilePath      string
+	TLSCertFilePath        string
+	TLSKeyFilePath         string
+}
+
+// WithDefaults applies defaults to unset values.
+func (c *YBClientConfig) WithDefaults() *YBClientConfig {
+	if c.MaxExecuteRetries == 0 {
+		c.MaxExecuteRetries = DefaultMaxExecuteRetries
+	}
+	if c.MaxReconnectAttempts == 0 {
+		c.MaxReconnectAttempts = DefaultMaxReconnectAttempts
+	}
+	if c.OpTimeout == 0 {
+		c.OpTimeout = DefaultOpTimeout
+	}
+	if c.ReconnectRetryInterval == 0 {
+		c.ReconnectRetryInterval = DefaultReconnectRetryInterval
+	}
+	if c.RetryInterval == 0 {
+		c.RetryInterval = DefaultRetryInterval
+	}
+	return c
 }
 
 // TLSConfig returns TLS config if TLS is configured.
