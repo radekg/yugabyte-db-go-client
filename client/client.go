@@ -29,17 +29,19 @@ type YBClient interface {
 }
 
 var (
-	errAlreadyConnected  = fmt.Errorf("client: already connected")
-	errConnecting        = fmt.Errorf("client: connecting")
-	errLeaderWaitTimeout = fmt.Errorf("client: leader wait timed out")
-	errNoClient          = fmt.Errorf("client: no client")
-	errNotReconnected    = fmt.Errorf("client: reconnect failed")
+	errConnected         = fmt.Errorf(clientErrors.ErrorMessageConnected)
+	errConnecting        = fmt.Errorf(clientErrors.ErrorMessageConnecting)
+	errLeaderWaitTimeout = fmt.Errorf(clientErrors.ErrorMessageLeaderWaitTimeout)
+	errNoClient          = fmt.Errorf(clientErrors.ErrorMessageNoClient)
+	errNotConnected      = fmt.Errorf(clientErrors.ErrorMessageNotConnected)
+	errNotReconnected    = fmt.Errorf(clientErrors.ErrorMessageReconnectFailed)
 )
 
 type defaultYBClient struct {
 	config          *configs.YBClientConfig
 	connectedClient YBConnectedClient
 	isConnecting    bool
+	isConnected     bool
 	lock            *sync.Mutex
 	logger          hclog.Logger
 }
@@ -59,27 +61,31 @@ func (c *defaultYBClient) Close() error {
 	if c.connectedClient == nil {
 		return errNoClient
 	}
-	return c.closeUnsafe()
+	closeError := c.closeUnsafe()
+	c.isConnected = false
+	c.connectedClient = nil
+	return closeError
 }
 
 func (c *defaultYBClient) Connect() error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-
 	if c.isConnecting {
 		return errConnecting
 	}
-
-	if c.connectedClient != nil {
-		return errAlreadyConnected
+	if c.isConnected || c.connectedClient != nil {
+		return errConnected
 	}
-
 	return c.connectUnsafe()
 }
 
 func (c *defaultYBClient) Execute(payload, response protoreflect.ProtoMessage) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
+
+	if !c.isConnected {
+		return errNotConnected
+	}
 
 	if c.connectedClient == nil {
 		return errNoClient
@@ -131,14 +137,19 @@ func (c *defaultYBClient) Execute(payload, response protoreflect.ProtoMessage) e
 			return reportErr
 		}
 
-		// broken pipe qualifies for immediate retry:
 		if errors.Is(executeErr, syscall.EPIPE) {
+			// broken pipe qualifies for immediate retry:
 			executeErr = &clientErrors.RequiresReconnectError{
 				Cause: executeErr,
 			}
-		}
-
-		if _, ok := executeErr.(*clientErrors.UnprocessableResponseError); ok {
+		} else if _, ok := executeErr.(*clientErrors.SendReceiveError); ok {
+			// the client was connected but is no longer able to
+			// communicate with the server, this qualifies
+			// for reconnect
+			executeErr = &clientErrors.RequiresReconnectError{
+				Cause: executeErr,
+			}
+		} else if _, ok := executeErr.(*clientErrors.UnprocessableResponseError); ok {
 			// complete payload has been read from the server
 			// but payload could not be deserialized as protobuf,
 			// this qualifies for immediate retry:
@@ -206,9 +217,7 @@ func (c *defaultYBClient) Execute(payload, response protoreflect.ProtoMessage) e
 }
 
 func (c *defaultYBClient) closeUnsafe() error {
-	closeError := c.connectedClient.Close()
-	c.connectedClient = nil
-	return closeError
+	return c.connectedClient.Close()
 }
 
 func (c *defaultYBClient) connectUnsafe() error {
@@ -309,6 +318,7 @@ func (c *defaultYBClient) connectUnsafe() error {
 		case connectedClient := <-chanConnectedClient:
 			c.connectedClient = connectedClient
 			c.isConnecting = false
+			c.isConnected = true
 			return nil
 		case <-time.After(c.config.OpTimeout):
 			c.isConnecting = false
@@ -319,8 +329,9 @@ func (c *defaultYBClient) connectUnsafe() error {
 }
 
 func (c *defaultYBClient) reconnect() error {
-	if err := c.closeUnsafe(); err != nil {
-		return err
-	}
+	// ignore close error
+	// if the client isn't connected, it does not matter to us
+	//
+	c.closeUnsafe()
 	return c.connectUnsafe()
 }

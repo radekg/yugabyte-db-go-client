@@ -8,8 +8,17 @@ import (
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
 
-var (
-	errNoLeader = fmt.Errorf("client: no leader")
+const (
+	ErrorMessageConnected             = "client: connected"
+	ErrorMessageConnecting            = "client: connecting"
+	ErrorMessageLeaderWaitTimeout     = "client: leader wait timed out"
+	ErrorMessageNoClient              = "client: no client"
+	ErrorMessageNoLeader              = "client: no leader"
+	ErrorMessageNotConnected          = "client: not connected"
+	ErrorMessageReconnectFailed       = "client: reconnect failed"
+	ErrorMessageReconnectRequired     = "client: reconnect required"
+	ErrorMessageSendReceiveFailed     = "client: send/receive failed"
+	ErrorMessageUnprocessableResponse = "client: unprocessable response"
 )
 
 // AbstractMasterErrorResponse isn't an error. It represents an RPC response
@@ -24,7 +33,7 @@ type AbstractMasterErrorResponse interface {
 type NoLeaderError struct{}
 
 func (e *NoLeaderError) Error() string {
-	return errNoLeader.Error()
+	return ErrorMessageNoLeader
 }
 
 // RequiresReconnectError is an error indicating a need to reconnect.
@@ -33,7 +42,17 @@ type RequiresReconnectError struct {
 }
 
 func (e *RequiresReconnectError) Error() string {
-	return multierror.Append(fmt.Errorf("client: requires reconnect"), e.Cause).Error()
+	return multierror.Append(fmt.Errorf(ErrorMessageReconnectRequired), e.Cause).Error()
+}
+
+// SendReceiveError is returned when the client is unable to
+// send the paylod or receive from the server.
+type SendReceiveError struct {
+	Cause error
+}
+
+func (e *SendReceiveError) Error() string {
+	return multierror.Append(fmt.Errorf(ErrorMessageSendReceiveFailed), e.Cause).Error()
 }
 
 // UnprocessableResponseError represents a client error where a fully read response
@@ -45,5 +64,5 @@ type UnprocessableResponseError struct {
 }
 
 func (e *UnprocessableResponseError) Error() string {
-	return multierror.Append(fmt.Errorf("client: unprocessable response"), e.Cause).Error()
+	return multierror.Append(fmt.Errorf(ErrorMessageUnprocessableResponse), e.Cause).Error()
 }

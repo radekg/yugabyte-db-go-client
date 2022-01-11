@@ -342,11 +342,11 @@ func (c *defaultSingleNodeClient) executeOp(payload, result protoreflect.ProtoMe
 		return err
 	}
 	if err := c.send(b); err != nil {
-		return err
+		return &errors.SendReceiveError{Cause: err}
 	}
 	buffer, err := c.recv() // TODO: can move this to readResponseInto
 	if err != nil {
-		return err
+		return &errors.SendReceiveError{Cause: err}
 	}
 	readResponseErr := c.readResponseInto(buffer, result)
 	if readResponseErr != nil {
