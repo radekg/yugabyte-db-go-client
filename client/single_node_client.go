@@ -136,12 +136,18 @@ func (c *defaultSingleNodeClient) afterConnect() *defaultSingleNodeClient {
 		header := append([]byte("YB"), 1)
 		n, err := c.conn.Write(header)
 		if err != nil {
-			c.chanConnectErr <- err
+			c.chanConnectErr <- &errors.ProtocolConnectionHeaderWriteError{
+				Cause: err,
+			}
 			close(c.chanConnected)
 			return
 		}
 		if n != len(header) {
-			c.chanConnectErr <- fmt.Errorf("header not written: %d vs expected %d", n, len(header))
+			c.chanConnectErr <- &errors.ProtocolConnectionHeaderWriteIncompleteError{
+				Header:   header,
+				Expected: len(header),
+				Written:  n,
+			}
 			close(c.chanConnected)
 			return
 		}
@@ -190,6 +196,7 @@ func (c *defaultSingleNodeClient) send(buf *bytes.Buffer) error {
 		return err
 	}
 	if n != nBytesToWrite {
+		// TODO: proper error type
 		return fmt.Errorf("not all bytes written: %d vs expected %d", n, nBytesToWrite)
 	}
 	return nil
@@ -204,6 +211,7 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 	var dataLength int32
 	if err := binary.Read(reader, binary.BigEndian, &dataLength); err != nil {
 		opLogger.Error("failed reading response header length", "reason", err)
+		// TODO: proper error type
 		return err
 	}
 
@@ -213,6 +221,7 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 	responseHeaderLength, err := utils.ReadUvarint32(reader)
 	if err != nil {
 		opLogger.Error("failed reading response header length", "reason", err)
+		// TODO: proper error type
 		return err
 	}
 
@@ -224,6 +233,7 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 	n, err := reader.Read(responseHeaderBuf)
 	if err != nil {
 		opLogger.Error("failed reading response header", "reason", err)
+		// TODO: proper error type
 		return err
 	}
 
@@ -237,6 +247,7 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 		opLogger.Error("response header read bytes count != expected count",
 			"expected-header-length", responseHeaderLength,
 			"read-header-length", n)
+		// TODO: proper error type
 		return fmt.Errorf("expected to read %d but read %d", responseHeaderLength, n)
 	}
 
@@ -244,6 +255,7 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 	protoErr := utils.DeserializeProto(responseHeaderBuf, responseHeader)
 	if protoErr != nil {
 		opLogger.Error("failed unmarshalling response header", "reason", err)
+		// TODO: proper error type
 		return err
 	}
 
@@ -258,6 +270,7 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 	responsePayloadLength, err := utils.ReadUvarint32(reader)
 	if err != nil {
 		opLogger.Error("failed reading response payload length", "reason", err)
+		// TODO: proper error type
 		return err
 	}
 
@@ -274,6 +287,7 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 	n, err = reader.Read(responsePayloadBuf)
 	if err != nil {
 		opLogger.Error("failed reading response payload", "reason", err)
+		// TODO: proper error type
 		return err
 	}
 
@@ -291,6 +305,7 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 				opLogger.Error("response payload read bytes count != expected count",
 					"expected-payload-length", responsePayloadLength,
 					"read-payload-length", n)
+				// TODO: proper error type
 				return fmt.Errorf("expected to read %d but read %d", responsePayloadLength, n)
 			}
 
@@ -308,6 +323,7 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 				opLogger.Error("consumed too much data",
 					"expected-payload-length", responsePayloadLength,
 					"consumed-payload-length", n)
+				// TODO: proper error type
 				return fmt.Errorf("consumed too much data, expected %d but read %d", responsePayloadLength, n)
 			}
 		}
@@ -328,7 +344,9 @@ func (c *defaultSingleNodeClient) executeOp(payload, result protoreflect.ProtoMe
 
 	svcInfo := c.svcRegistry.Get(payload)
 	if svcInfo == nil {
-		return fmt.Errorf("no service info for proto type '%s'", payload.ProtoReflect().Descriptor().FullName()) // TODO: introduce a proper error type
+		return &errors.ProtoServiceError{
+			ProtoType: payload.ProtoReflect().Descriptor().FullName(),
+		}
 	}
 
 	requestHeader := &ybApi.RequestHeader{
@@ -339,12 +357,16 @@ func (c *defaultSingleNodeClient) executeOp(payload, result protoreflect.ProtoMe
 
 	b := bytes.NewBuffer([]byte{})
 	if err := utils.WriteMessages(b, requestHeader, payload); err != nil {
-		return err
+		return &errors.PayloadWriteError{
+			Cause:   err,
+			Header:  requestHeader,
+			Payload: payload,
+		}
 	}
 	if err := c.send(b); err != nil {
 		return &errors.SendReceiveError{Cause: err}
 	}
-	buffer, err := c.recv() // TODO: can move this to readResponseInto
+	buffer, err := c.recv()
 	if err != nil {
 		return &errors.SendReceiveError{Cause: err}
 	}

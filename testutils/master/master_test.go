@@ -1,11 +1,11 @@
 package master
 
 import (
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/go-multierror"
 	"github.com/radekg/yugabyte-db-go-client/client"
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	"github.com/radekg/yugabyte-db-go-client/errors"
@@ -95,15 +95,7 @@ func TestMasterReconnect(t *testing.T) {
 	err := client.Execute(request, response)
 	assert.NotNil(t, err)
 
-	wasReconnectFailedError := false
-	if tMultiError, ok := err.(*multierror.Error); ok {
-		for _, me := range tMultiError.Errors {
-			if me.Error() == errors.ErrorMessageReconnectFailed {
-				wasReconnectFailedError = true
-				break
-			}
-		}
-	}
+	wasReconnectFailedError := strings.HasPrefix(err.Error(), errors.ErrorMessageReconnectFailed)
 	assert.True(t, wasReconnectFailedError, "expected reconnect failed error")
 
 }

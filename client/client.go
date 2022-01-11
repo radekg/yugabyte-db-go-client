@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/hashicorp/go-multierror"
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	clientErrors "github.com/radekg/yugabyte-db-go-client/errors"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -199,7 +198,7 @@ func (c *defaultYBClient) Execute(payload, response protoreflect.ProtoMessage) e
 				c.logger.Error("execute: failed reconnect consecutive maximum reconnect attempts",
 					"max-attempts", c.config.MaxReconnectAttempts,
 					"reason", tReconnectError.Cause)
-				return multierror.Append(errNotReconnected, tReconnectError.Cause)
+				return fmt.Errorf("%s: %s", errNotReconnected.Error(), tReconnectError.Cause.Error())
 			}
 
 			// retry:
