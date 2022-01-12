@@ -8,12 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/ory/dockertest/v3"
 	dc "github.com/ory/dockertest/v3/docker"
+	"github.com/radekg/yugabyte-db-go-client/client"
 	"github.com/radekg/yugabyte-db-go-client/testutils/common"
 
-	"github.com/radekg/yugabyte-db-go-client/client/implementation"
 	"github.com/radekg/yugabyte-db-go-client/configs"
 )
 
@@ -235,18 +234,29 @@ func SetupMasters(t *testing.T, config *common.TestMasterConfiguration) TestEnvC
 
 			poolRetryErr := pool.Retry(func() error {
 
-				t.Log("Querying master registration:", masterInternalAddresses[masterIndex])
+				t.Log("Querying master registration:", masterExternalAddresses[masterIndex])
 
-				client, err := implementation.MasterLeaderConnectedClient(&configs.CliConfig{
-					MasterHostPort: masterExternalAddresses,
-					OpTimeout:      time.Duration(time.Second * 5),
-				}, hclog.Default())
+				client, err := client.NewDefaultConnector().Connect(&configs.YBSingleNodeClientConfig{
+					MasterHostPort: masterExternalAddresses[masterIndex],
+					OpTimeout:      uint32(time.Duration(time.Second * 60).Seconds()),
+				})
+
 				if err != nil {
 					if config.LogRegistrationRetryErrors {
 						// this cannot be t.Error because that will fail the test!!!
 						t.Log("Master", masterInternalAddresses[masterIndex], "connect reported an error:", err)
 					}
 					return err
+				}
+
+				select {
+				case err := <-client.OnConnectError():
+					if config.LogRegistrationRetryErrors {
+						// this cannot be t.Error because that will fail the test!!!
+						t.Log("Master", masterInternalAddresses[masterIndex], "OnConnectError reported an error:", err)
+					}
+					return err
+				case <-client.OnConnected():
 				}
 
 				defer client.Close()

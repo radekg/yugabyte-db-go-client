@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/go-hclog"
-	"github.com/radekg/yugabyte-db-go-client/client/implementation"
+	"github.com/radekg/yugabyte-db-go-client/client"
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	"github.com/radekg/yugabyte-db-go-client/testutils/common"
 	"github.com/radekg/yugabyte-db-go-client/testutils/master"
+	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 
 	dc "github.com/ory/dockertest/v3/docker"
 
@@ -26,21 +26,28 @@ func TestTServerIntegration(t *testing.T) {
 	})
 	defer masterTestCtx.Cleanup()
 
-	client, err := implementation.MasterLeaderConnectedClient(&configs.CliConfig{
+	client := client.NewYBClient(&configs.YBClientConfig{
 		MasterHostPort: masterTestCtx.MasterExternalAddresses(),
 		OpTimeout:      time.Duration(time.Second * 5),
-	}, hclog.Default())
-	if err != nil {
-		t.Fatal(err)
-	}
+	})
+
+	common.Eventually(t, 15, func() error {
+		if err := client.Connect(); err != nil {
+			return err
+		}
+		return nil
+	})
+
 	defer client.Close()
 
 	common.Eventually(t, 15, func() error {
-		listMastersPb, err := client.ListMasters()
+		request := &ybApi.ListMastersRequestPB{}
+		response := &ybApi.ListMastersResponsePB{}
+		err := client.Execute(request, response)
 		if err != nil {
 			return err
 		}
-		t.Log(" ==> Received master list", listMastersPb)
+		t.Log("Received master list", response)
 		return nil
 	})
 
@@ -69,11 +76,13 @@ func TestTServerIntegration(t *testing.T) {
 	defer tserver3Ctx.Cleanup()
 
 	common.Eventually(t, 15, func() error {
-		listTServersPb, err := client.ListTabletServers(&configs.OpListTabletServersConfig{})
+		request := &ybApi.ListTabletServersRequestPB{}
+		response := &ybApi.ListTabletServersResponsePB{}
+		err := client.Execute(request, response)
 		if err != nil {
 			return err
 		}
-		t.Log(" ==> Received TServer list", listTServersPb)
+		t.Log(" ==> Received TServer list", response)
 		return nil
 	})
 

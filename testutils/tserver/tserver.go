@@ -8,14 +8,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/ory/dockertest/v3"
 	dc "github.com/ory/dockertest/v3/docker"
+	"github.com/radekg/yugabyte-db-go-client/errors"
 	"github.com/radekg/yugabyte-db-go-client/testutils/common"
 	"github.com/radekg/yugabyte-db-go-client/testutils/master"
 
-	"github.com/radekg/yugabyte-db-go-client/client/implementation"
+	"github.com/radekg/yugabyte-db-go-client/client"
 	"github.com/radekg/yugabyte-db-go-client/configs"
+
+	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
 
 // TestEnvContext represents a test YugabyteDB TServer environment context.
@@ -214,10 +216,10 @@ func SetupTServer(t *testing.T,
 
 			t.Log("Querying TServer status", tserver.Container.ID)
 
-			client, err := implementation.NewYBConnectedClient(&configs.YBClientConfig{
+			client, err := client.NewDefaultConnector().Connect(&configs.YBSingleNodeClientConfig{
 				MasterHostPort: fmt.Sprintf("127.0.0.1:%s", fetchedTServerRPCPort),
 				OpTimeout:      uint32(time.Duration(time.Second * 60).Seconds()),
-			}, hclog.Default())
+			})
 
 			if err != nil {
 				if config.LogRegistrationRetryErrors {
@@ -231,7 +233,7 @@ func SetupTServer(t *testing.T,
 			case err := <-client.OnConnectError():
 				if config.LogRegistrationRetryErrors {
 					// this cannot be t.Error because that will fail the test!!!
-					t.Error("TServer OnConnectError reported an error:", err)
+					t.Log("TServer OnConnectError reported an error:", err)
 				}
 				return err
 			case <-client.OnConnected():
@@ -239,16 +241,28 @@ func SetupTServer(t *testing.T,
 
 			defer client.Close()
 
-			responsePayloadPb, err := client.IsTabletServerReady()
-			if err != nil {
+			request := &ybApi.IsTabletServerReadyRequestPB{}
+			response := &ybApi.IsTabletServerReadyResponsePB{}
+			isTabletServerReadyError := client.Execute(request, response)
+
+			if isTabletServerReadyError != nil {
 				if config.LogRegistrationRetryErrors {
 					// this cannot be t.Error because that will fail the test!!!
-					t.Error("TServer IsTabletServerReady reported an error:", err)
+					t.Log("TServer IsTabletServerReady reported an error:", isTabletServerReadyError)
 				}
-				return err
+				return isTabletServerReadyError
 			}
 
-			t.Log("TServer reported its status:", responsePayloadPb)
+			isTabletServerReadyError = errors.NewTabletServerError(response.Error)
+			if isTabletServerReadyError != nil {
+				if config.LogRegistrationRetryErrors {
+					// this cannot be t.Error because that will fail the test!!!
+					t.Log("TServer IsTabletServerReady reported an error:", isTabletServerReadyError)
+				}
+				return isTabletServerReadyError
+			}
+
+			t.Log("TServer reported its status:", response)
 
 			return nil
 
