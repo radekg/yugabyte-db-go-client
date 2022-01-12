@@ -196,8 +196,7 @@ func (c *defaultSingleNodeClient) send(buf *bytes.Buffer) error {
 		return err
 	}
 	if n != nBytesToWrite {
-		// TODO: proper error type
-		return fmt.Errorf("not all bytes written: %d vs expected %d", n, nBytesToWrite)
+		return fmt.Errorf("incomplete write: %d bytes vs %d expected", n, nBytesToWrite)
 	}
 	return nil
 }
@@ -210,9 +209,10 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 	// https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/CallResponse.java#L71
 	var dataLength int32
 	if err := binary.Read(reader, binary.BigEndian, &dataLength); err != nil {
-		opLogger.Error("failed reading response header length", "reason", err)
-		// TODO: proper error type
-		return err
+		opLogger.Error("failed reading response data length", "reason", err)
+		return &errors.ReceiveError{
+			Cause: fmt.Errorf("response data length read failed: %s", err.Error()),
+		}
 	}
 
 	opLogger.Trace("data-length", "value", dataLength)
@@ -221,8 +221,9 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 	responseHeaderLength, err := utils.ReadUvarint32(reader)
 	if err != nil {
 		opLogger.Error("failed reading response header length", "reason", err)
-		// TODO: proper error type
-		return err
+		return &errors.ReceiveError{
+			Cause: fmt.Errorf("response header length read failed: %s", err.Error()),
+		}
 	}
 
 	opLogger.Trace("response-header-length", "value", responseHeaderLength)
@@ -233,8 +234,9 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 	n, err := reader.Read(responseHeaderBuf)
 	if err != nil {
 		opLogger.Error("failed reading response header", "reason", err)
-		// TODO: proper error type
-		return err
+		return &errors.ReceiveError{
+			Cause: fmt.Errorf("response header read failed: %s", err.Error()),
+		}
 	}
 
 	opLogger.Trace("response-header-read",
@@ -247,16 +249,19 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 		opLogger.Error("response header read bytes count != expected count",
 			"expected-header-length", responseHeaderLength,
 			"read-header-length", n)
-		// TODO: proper error type
-		return fmt.Errorf("expected to read %d but read %d", responseHeaderLength, n)
+		return &errors.ReceiveError{
+			Cause: fmt.Errorf("response header incomplete: read %d bytes vs expected %d",
+				n, responseHeaderLength),
+		}
 	}
 
 	responseHeader := &ybApi.ResponseHeader{}
 	protoErr := utils.DeserializeProto(responseHeaderBuf, responseHeader)
 	if protoErr != nil {
 		opLogger.Error("failed unmarshalling response header", "reason", err)
-		// TODO: proper error type
-		return err
+		return &errors.ReceiveError{
+			Cause: fmt.Errorf("response header unprocessable: %s", err.Error()),
+		}
 	}
 
 	opLogger = opLogger.With("call-id", *responseHeader.CallId,
@@ -270,8 +275,9 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 	responsePayloadLength, err := utils.ReadUvarint32(reader)
 	if err != nil {
 		opLogger.Error("failed reading response payload length", "reason", err)
-		// TODO: proper error type
-		return err
+		return &errors.ReceiveError{
+			Cause: fmt.Errorf("response payload length read failed: %s", err.Error()),
+		}
 	}
 
 	opLogger.Trace("response-payload-length", "value", responsePayloadLength)
@@ -287,8 +293,9 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 	n, err = reader.Read(responsePayloadBuf)
 	if err != nil {
 		opLogger.Error("failed reading response payload", "reason", err)
-		// TODO: proper error type
-		return err
+		return &errors.ReceiveError{
+			Cause: fmt.Errorf("response data read failed: %s", err.Error()),
+		}
 	}
 
 	opLogger.Trace("response-payload-read",
@@ -305,8 +312,10 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 				opLogger.Error("response payload read bytes count != expected count",
 					"expected-payload-length", responsePayloadLength,
 					"read-payload-length", n)
-				// TODO: proper error type
-				return fmt.Errorf("expected to read %d but read %d", responsePayloadLength, n)
+				return &errors.ReceiveError{
+					Cause: fmt.Errorf("response payload incomplete: read %d bytes vs expected %d",
+						n, responsePayloadLength),
+				}
 			}
 
 			n = n + buf.Len()
@@ -323,8 +332,10 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 				opLogger.Error("consumed too much data",
 					"expected-payload-length", responsePayloadLength,
 					"consumed-payload-length", n)
-				// TODO: proper error type
-				return fmt.Errorf("consumed too much data, expected %d but read %d", responsePayloadLength, n)
+				return &errors.ReceiveError{
+					Cause: fmt.Errorf("response payload too long: read %d bytes vs expected %d",
+						n, responsePayloadLength),
+				}
 			}
 		}
 	}
@@ -333,7 +344,7 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 	if protoErr2 != nil {
 		return &errors.UnprocessableResponseError{
 			Cause:           protoErr2,
-			ConsumedPayload: responsePayloadBuf,
+			ConsumedPayload: responseHeaderBuf,
 		}
 	}
 
@@ -364,11 +375,11 @@ func (c *defaultSingleNodeClient) executeOp(payload, result protoreflect.ProtoMe
 		}
 	}
 	if err := c.send(b); err != nil {
-		return &errors.SendReceiveError{Cause: err}
+		return &errors.SendError{Cause: err}
 	}
 	buffer, err := c.recv()
 	if err != nil {
-		return &errors.SendReceiveError{Cause: err}
+		return &errors.ReceiveError{Cause: err}
 	}
 	readResponseErr := c.readResponseInto(buffer, result)
 	if readResponseErr != nil {

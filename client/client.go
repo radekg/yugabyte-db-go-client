@@ -150,13 +150,28 @@ func (c *defaultYBClient) Execute(payload, response protoreflect.ProtoMessage) e
 			executeErr = &clientErrors.RequiresReconnectError{
 				Cause: executeErr,
 			}
-		} else if _, ok := executeErr.(*clientErrors.SendReceiveError); ok {
+		} else if _, ok := executeErr.(*clientErrors.SendError); ok {
 			// the client was connected but is no longer able to
-			// communicate with the server, this qualifies
+			// send data to the server, this qualifies
 			// for reconnect
 			executeErr = &clientErrors.RequiresReconnectError{
 				Cause: executeErr,
 			}
+		} else if tError, ok := executeErr.(*clientErrors.ReceiveError); ok {
+
+			// could not read payload from the server,
+			// if not requires reconnect, just retry...
+			if !tError.RequiresReconnect() {
+				currentAttempt = currentAttempt + 1
+				<-time.After(c.config.RetryInterval)
+				continue
+
+			}
+			// otherwise reconnect and retry...
+			executeErr = &clientErrors.RequiresReconnectError{
+				Cause: executeErr,
+			}
+
 		} else if _, ok := executeErr.(*clientErrors.UnprocessableResponseError); ok {
 			// complete payload has been read from the server
 			// but payload could not be deserialized as protobuf,

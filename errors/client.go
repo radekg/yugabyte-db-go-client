@@ -2,6 +2,9 @@ package errors
 
 import (
 	"fmt"
+	"syscall"
+
+	goErrors "errors"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 
@@ -27,12 +30,14 @@ const (
 	ErrorMessageProtocolConnectionHeader = "client: protocol connection header error"
 	// ErrorMessageProtoServiceError is an error message.
 	ErrorMessageProtoServiceError = "client: proto service error"
+	// ErrorMessageReceiveFailed is an error message.
+	ErrorMessageReceiveFailed = "client: receive failed"
 	// ErrorMessageReconnectFailed is an error message.
 	ErrorMessageReconnectFailed = "client: reconnect failed"
 	// ErrorMessageReconnectRequired is an error message.
 	ErrorMessageReconnectRequired = "client: reconnect required"
-	// ErrorMessageSendReceiveFailed is an error message.
-	ErrorMessageSendReceiveFailed = "client: send/receive failed"
+	// ErrorMessageSendFailed is an error message.
+	ErrorMessageSendFailed = "client: send failed"
 	// ErrorMessageUnprocessableResponse is an error message.
 	ErrorMessageUnprocessableResponse = "client: unprocessable response"
 )
@@ -96,6 +101,20 @@ func (e *ProtoServiceError) Error() string {
 	return fmt.Sprintf("%s: %s", ErrorMessageProtoServiceError, e.ProtoType)
 }
 
+// ReceiveError is returned when the client is unable to
+// send the payload or receive from the server.
+type ReceiveError struct {
+	Cause error
+}
+
+func (e *ReceiveError) Error() string {
+	return fmt.Sprintf("%s: %s", ErrorMessageReceiveFailed, e.Cause.Error())
+}
+
+func (e *ReceiveError) RequiresReconnect() bool {
+	return goErrors.Is(e.Cause, syscall.EPIPE)
+}
+
 // RequiresReconnectError is an error indicating a need to reconnect.
 type RequiresReconnectError struct {
 	Cause error
@@ -105,14 +124,14 @@ func (e *RequiresReconnectError) Error() string {
 	return fmt.Sprintf("%s: no service for type '%s'", ErrorMessageReconnectRequired, e.Cause.Error())
 }
 
-// SendReceiveError is returned when the client is unable to
+// SendError is returned when the client is unable to
 // send the payload or receive from the server.
-type SendReceiveError struct {
+type SendError struct {
 	Cause error
 }
 
-func (e *SendReceiveError) Error() string {
-	return fmt.Sprintf("%s: %s", ErrorMessageSendReceiveFailed, e.Cause.Error())
+func (e *SendError) Error() string {
+	return fmt.Sprintf("%s: %s", ErrorMessageSendFailed, e.Cause.Error())
 }
 
 // UnprocessableResponseError represents a client error where a fully read response
