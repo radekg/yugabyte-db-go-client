@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	clientErrors "github.com/radekg/yugabyte-db-go-client/errors"
+	"github.com/radekg/yugabyte-db-go-client/metrics"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
@@ -29,6 +30,8 @@ type YBClient interface {
 	// Uses go-hclog. Users can provide integrate with any logging
 	// framework using https://pkg.go.dev/github.com/hashicorp/go-hclog#InterceptLogger.
 	WithLogger(logger hclog.Logger) YBClient
+	// Allows providing custom implementation of the metrics callback.
+	WithMetricsCallback(callback metrics.Callback) YBClient
 }
 
 var (
@@ -47,19 +50,26 @@ type defaultYBClient struct {
 	isConnected     bool
 	lock            *sync.Mutex
 	logger          hclog.Logger
+	metricsCallback metrics.Callback
 }
 
 // NewYBClient constructs a new instance of the high-level YugabyteDB client.
 func NewYBClient(config *configs.YBClientConfig) YBClient {
 	return &defaultYBClient{
-		config: config.WithDefaults(),
-		lock:   &sync.Mutex{},
-		logger: hclog.Default(),
+		config:          config.WithDefaults(),
+		lock:            &sync.Mutex{},
+		logger:          hclog.Default(),
+		metricsCallback: metrics.Noop(),
 	}
 }
 
 func (c *defaultYBClient) WithLogger(logger hclog.Logger) YBClient {
 	c.logger = logger
+	return c
+}
+
+func (c *defaultYBClient) WithMetricsCallback(callback metrics.Callback) YBClient {
+	c.metricsCallback = callback
 	return c
 }
 
@@ -197,12 +207,17 @@ func (c *defaultYBClient) Execute(payload, response protoreflect.ProtoMessage) e
 			reconnected := false
 			for {
 
+				c.metricsCallback.ClientReconnectAttempt()
+
 				reconnectErr := c.reconnect()
 
 				if reconnectErr == nil {
+					c.metricsCallback.ClientReconnectSuccess()
 					reconnected = true
 					break
 				}
+
+				c.metricsCallback.ClientReconnectFailure()
 
 				if currentReconnectAttempt == c.config.MaxReconnectAttempts {
 					break
@@ -219,6 +234,7 @@ func (c *defaultYBClient) Execute(payload, response protoreflect.ProtoMessage) e
 			}
 
 			if !reconnected {
+
 				c.logger.Error("execute: failed reconnect consecutive maximum reconnect attempts",
 					"max-attempts", c.config.MaxReconnectAttempts,
 					"reason", tReconnectError.Cause)
@@ -268,7 +284,9 @@ func (c *defaultYBClient) connectUnsafe() error {
 
 	for hostPort, cliConfig := range validConfigs {
 		go func(thisHostPort string, thisConfig *configs.YBSingleNodeClientConfig) {
-			singleNodeClient, err := Connect(thisConfig, c.logger.Named("client"))
+			singleNodeClient, err := NewDefaultConnector().
+				WithLogger(c.logger.Named("connected-client")).
+				WithMetricsCallback(c.metricsCallback).Connect(thisConfig)
 			if err != nil {
 				c.logger.Error("failed creating a client",
 					"reason", err,
@@ -333,17 +351,20 @@ func (c *defaultYBClient) connectUnsafe() error {
 	for {
 		select {
 		case <-chanErrors:
+			c.metricsCallback.ClientError()
 			atomic.AddUint64(&done, 1)
 			if atomic.LoadUint64(&done) == max {
 				c.isConnecting = false
 				return &clientErrors.NoLeaderError{}
 			}
 		case connectedClient := <-chanConnectedClient:
+			c.metricsCallback.ClientConnect()
 			c.connectedClient = connectedClient
 			c.isConnecting = false
 			c.isConnected = true
 			return nil
 		case <-time.After(c.config.OpTimeout):
+			c.metricsCallback.ClientError()
 			c.isConnecting = false
 			return errLeaderWaitTimeout
 		}
@@ -354,7 +375,6 @@ func (c *defaultYBClient) connectUnsafe() error {
 func (c *defaultYBClient) reconnect() error {
 	// ignore close error
 	// if the client isn't connected, it does not matter to us
-	//
 	c.closeUnsafe()
 	return c.connectUnsafe()
 }

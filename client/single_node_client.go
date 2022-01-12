@@ -2,7 +2,6 @@ package client
 
 import (
 	"bytes"
-	"crypto/tls"
 	"encoding/binary"
 	"fmt"
 	"net"
@@ -10,65 +9,13 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	"github.com/radekg/yugabyte-db-go-client/errors"
+	"github.com/radekg/yugabyte-db-go-client/metrics"
 	"github.com/radekg/yugabyte-db-go-client/utils"
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 var recvChunkSize = 4 * 1024
-
-// Connect connects to the master server without TLS.
-func Connect(cfg *configs.YBSingleNodeClientConfig, logger hclog.Logger) (YBConnectedClient, error) {
-	if logger == nil {
-		logger = hclog.Default().Named("default-client-log")
-	}
-	if cfg.TLSConfig != nil {
-		return connectTLS(cfg, logger)
-	}
-	return connect(cfg, logger)
-}
-
-func connect(cfg *configs.YBSingleNodeClientConfig, logger hclog.Logger) (YBConnectedClient, error) {
-	logger.Debug("connecting non-TLS client")
-	conn, err := net.Dial("tcp", cfg.MasterHostPort)
-	if err != nil {
-		return nil, err
-	}
-	client := &defaultSingleNodeClient{
-		originalConfig: cfg,
-		chanConnected:  make(chan struct{}, 1),
-		chanConnectErr: make(chan error, 1),
-		closeFunc: func() error {
-			return conn.Close()
-		},
-		conn:        conn,
-		logger:      logger,
-		svcRegistry: NewDefaultServiceRegistry(),
-	}
-	return client.afterConnect(), nil
-}
-
-func connectTLS(cfg *configs.YBSingleNodeClientConfig, logger hclog.Logger) (YBConnectedClient, error) {
-	logger.Debug("connecting TLS client")
-	conn, err := tls.Dial("tcp", cfg.MasterHostPort, cfg.TLSConfig)
-	if err != nil {
-		return nil, err
-	}
-	client := &defaultSingleNodeClient{
-		originalConfig: cfg,
-		chanConnected:  make(chan struct{}, 1),
-		chanConnectErr: make(chan error, 1),
-		closeFunc: func() error {
-			return conn.Close()
-		},
-		conn:        conn,
-		logger:      logger,
-		svcRegistry: NewDefaultServiceRegistry(),
-	}
-	return client.afterConnect(), nil
-}
-
-// Connected client
 
 // YBConnectedClient represents a connected client.
 type YBConnectedClient interface {
@@ -86,14 +33,15 @@ type YBConnectedClient interface {
 }
 
 type defaultSingleNodeClient struct {
-	originalConfig *configs.YBSingleNodeClientConfig
-	callCounter    int
-	chanConnected  chan struct{}
-	chanConnectErr chan error
-	closeFunc      func() error
-	conn           net.Conn
-	logger         hclog.Logger
-	svcRegistry    ServiceRegistry
+	originalConfig  *configs.YBSingleNodeClientConfig
+	callCounter     int
+	chanConnected   chan struct{}
+	chanConnectErr  chan error
+	closeFunc       func() error
+	conn            net.Conn
+	logger          hclog.Logger
+	metricsCallback metrics.Callback
+	svcRegistry     ServiceRegistry
 }
 
 // Close closes a connected client.
@@ -125,6 +73,11 @@ func (c *defaultSingleNodeClient) OnConnected() <-chan struct{} {
 // OnConnectError returns a channel which will return an error if connect fails.
 func (c *defaultSingleNodeClient) OnConnectError() <-chan error {
 	return c.chanConnectErr
+}
+
+func (c *defaultSingleNodeClient) WithMetricsCallback(callback metrics.Callback) YBConnectedClient {
+	c.metricsCallback = callback
+	return c
 }
 
 /// Private interface
@@ -171,6 +124,7 @@ func (c *defaultSingleNodeClient) recv() (*bytes.Buffer, error) {
 		if err != nil {
 			return buf, err
 		}
+		c.metricsCallback.ClientBytesReceived(n)
 		// we read an EOF, finished reading
 		// previous iteration was fitting
 		// all in one recvChunkSize
@@ -195,15 +149,16 @@ func (c *defaultSingleNodeClient) send(buf *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
+	c.metricsCallback.ClientBytesSent(n)
 	if n != nBytesToWrite {
-		return fmt.Errorf("incomplete write: %d bytes vs %d expected", n, nBytesToWrite)
+		return fmt.Errorf("write incomplete: %d bytes vs %d expected", n, nBytesToWrite)
 	}
 	return nil
 }
 
 func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m protoreflect.ProtoMessage) error {
 
-	opLogger := c.logger.Named("read-response-into").With("message", m.ProtoReflect().Type().Descriptor().Name())
+	opLogger := c.logger.With("message", m.ProtoReflect().Type().Descriptor().Name())
 
 	// Read the complete data length:
 	// https://github.com/yugabyte/yugabyte-db/blob/v2.7.2/java/yb-client/src/main/java/org/yb/client/CallResponse.java#L71
@@ -355,6 +310,8 @@ func (c *defaultSingleNodeClient) executeOp(payload, result protoreflect.ProtoMe
 
 	svcInfo := c.svcRegistry.Get(payload)
 	if svcInfo == nil {
+		c.metricsCallback.ClientError()
+		c.metricsCallback.ClientMessageSendFailure()
 		return &errors.ProtoServiceError{
 			ProtoType: payload.ProtoReflect().Descriptor().FullName(),
 		}
@@ -368,6 +325,8 @@ func (c *defaultSingleNodeClient) executeOp(payload, result protoreflect.ProtoMe
 
 	b := bytes.NewBuffer([]byte{})
 	if err := utils.WriteMessages(b, requestHeader, payload); err != nil {
+		c.metricsCallback.ClientError()
+		c.metricsCallback.ClientMessageSendFailure()
 		return &errors.PayloadWriteError{
 			Cause:   err,
 			Header:  requestHeader,
@@ -375,15 +334,32 @@ func (c *defaultSingleNodeClient) executeOp(payload, result protoreflect.ProtoMe
 		}
 	}
 	if err := c.send(b); err != nil {
+		c.metricsCallback.ClientError()
+		c.metricsCallback.ClientMessageSendFailure()
 		return &errors.SendError{Cause: err}
 	}
 	buffer, err := c.recv()
 	if err != nil {
+		c.metricsCallback.ClientError()
+		c.metricsCallback.ClientMessageSendFailure()
 		return &errors.ReceiveError{Cause: err}
 	}
 	readResponseErr := c.readResponseInto(buffer, result)
 	if readResponseErr != nil {
+		c.metricsCallback.ClientError()
+		c.metricsCallback.ClientMessageSendFailure()
 		return readResponseErr
 	}
+	c.metricsCallback.ClientMessageSendSuccess()
 	return nil
+}
+
+func (c *defaultSingleNodeClient) withLogger(logger hclog.Logger) *defaultSingleNodeClient {
+	c.logger = logger
+	return c
+}
+
+func (c *defaultSingleNodeClient) withMetricsCallback(callback metrics.Callback) *defaultSingleNodeClient {
+	c.metricsCallback = callback
+	return c
 }

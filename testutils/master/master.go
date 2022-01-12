@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/ory/dockertest/v3"
 	dc "github.com/ory/dockertest/v3/docker"
 	"github.com/radekg/yugabyte-db-go-client/client"
@@ -237,10 +236,10 @@ func SetupMasters(t *testing.T, config *common.TestMasterConfiguration) TestEnvC
 
 				t.Log("Querying master registration:", masterExternalAddresses[masterIndex])
 
-				client, err := client.Connect(&configs.YBSingleNodeClientConfig{
+				client, err := client.NewDefaultConnector().Connect(&configs.YBSingleNodeClientConfig{
 					MasterHostPort: masterExternalAddresses[masterIndex],
 					OpTimeout:      uint32(time.Duration(time.Second * 60).Seconds()),
-				}, hclog.Default())
+				})
 
 				if err != nil {
 					if config.LogRegistrationRetryErrors {

@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/ory/dockertest/v3"
 	dc "github.com/ory/dockertest/v3/docker"
 	"github.com/radekg/yugabyte-db-go-client/errors"
@@ -217,10 +216,10 @@ func SetupTServer(t *testing.T,
 
 			t.Log("Querying TServer status", tserver.Container.ID)
 
-			client, err := client.Connect(&configs.YBSingleNodeClientConfig{
+			client, err := client.NewDefaultConnector().Connect(&configs.YBSingleNodeClientConfig{
 				MasterHostPort: fmt.Sprintf("127.0.0.1:%s", fetchedTServerRPCPort),
 				OpTimeout:      uint32(time.Duration(time.Second * 60).Seconds()),
-			}, hclog.Default())
+			})
 
 			if err != nil {
 				if config.LogRegistrationRetryErrors {
