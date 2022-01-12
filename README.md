@@ -6,88 +6,73 @@ Work in progress. Current state: this can definitely work.
 
 ### Usage
 
-The `github.com/radekg/yugabyte-db-go-client/client/implementation` provides a reference client implementation.
-
-**TL;DR**: here's how to use the API client directly from _go_:
-
 ```go
 package main
 
 import (
-    "github.com/radekg/yugabyte-db-go-client/client"
-    "github.com/radekg/yugabyte-db-go-client/configs"
-    ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
-    
-    "github.com/hashicorp/go-hclog"
-
     "encoding/json"
     "fmt"
     "time"
+
+    "github.com/hashicorp/go-hclog"
+    
+    "github.com/radekg/yugabyte-db-go-client/client"
+	"github.com/radekg/yugabyte-db-go-client/configs"
+	"github.com/radekg/yugabyte-db-go-client/errors"
+
+    ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
 
 func main() {
 
     // construct the configuration:
     cfg := &configs.YBClientConfig{
-        MasterHostPort: "127.0.0.1:7100",
-        OpTimeout:      uint32(5000),
-        // use TLSConfig of type *tls.Config to configure TLS
-    }
+		MasterHostPort: []string{"127.0.0.1:7100", "127.0.0.1:17000", "127.0.0.1:27000"},
+		OpTimeout:      time.Duration(time.Second * 5),
+	}
 
-    // create a logger:
-    logger := hclog.Default()
+    customLogger := hclog.Default()
 
-    // create a client:
-    connectedClient, err := base.Connect(cfg, logger)
+    client := client.NewYBClient(cfg).
+        WithLogger(customLogger.Named("custom-client-logger"))
+
+    if err := client.Connect(); err != nil {
+		panic(err)
+	}
 
     if err != nil {
         panic(err)
     }
 
-    // wait for connection status:
-    select {
-    case err := <-connectedClient.OnConnectError():
-        logger.Error("failed connecting a client", "reason", err)
-        panic(err)
-    case <-connectedClient.OnConnected():
-        logger.Debug("client connected")
-    }
-    // when not using panics further down, use
-    // defer connectedClient.Close()
-
-    // create the request payload:
-    payload := &ybApi.ListMastersRequestPB{}
-    // create the response payload, it will be populated with the response data
-    // if the request succeeded:
-    responsePayload := &ybApi.ListMastersResponsePB{}
-
-    // execute the request:
-    if err := connectedClient.Execute(payload, responsePayload); err != nil {
-        connectedClient.Close()
+    request := &ybApi.ListMastersRequestPB{}
+	response := &ybApi.ListMastersResponsePB{}
+	err := client.Execute(request, response)
+	if err != nil {
+        client.Close()
         logger.Error("failed executing the request", "reason", err)
-        panic(err)
-    }
+		panic(err)
+	}
 
     // some of the payloads provide their own error responses,
     // handle it like this:
-    if err := responsePayload.GetError(); err != nil {
-        connectedClient.Close()
+    if err := response.GetError(); err != nil {
+        client.Close()
         logger.Error("request returned an error", "reason", err)
         panic(err)
     }
 
     // do something with the result:
-    bytes, err := json.MarshalIndent(responsePayload, "", "  ")
+    bytes, err := json.MarshalIndent(response, "", "  ")
     if err != nil {
-        connectedClient.Close()
+        client.Close()
         logger.Error("failed marshalling the response as JSON", "reason", err)
         panic(err)
     }
 
-    fmt.Println(string(bytes))
+    fmt.Println("successful masters response", string(bytes))
 
     // close the client at the very end
-    connectedClient.Close()
+    client.Close()
 
 }
 ```
