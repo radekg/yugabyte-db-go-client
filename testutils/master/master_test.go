@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/radekg/yugabyte-db-go-client/client"
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	"github.com/radekg/yugabyte-db-go-client/errors"
@@ -25,7 +24,7 @@ func TestMasterIntegration(t *testing.T) {
 	client := client.NewYBClient(&configs.YBClientConfig{
 		MasterHostPort: testCtx.MasterExternalAddresses(),
 		OpTimeout:      time.Duration(time.Second * 5),
-	}, hclog.Default())
+	})
 
 	common.Eventually(t, 15, func() error {
 		if err := client.Connect(); err != nil {
@@ -64,7 +63,7 @@ func TestMasterReconnect(t *testing.T) {
 		OpTimeout:              time.Duration(time.Second * 5),
 		MaxReconnectAttempts:   1,
 		ReconnectRetryInterval: time.Duration(time.Millisecond * 100),
-	}, hclog.Default())
+	})
 
 	errNotConnected := client.Execute(request, &ybApi.ListMastersResponsePB{})
 	assert.NotNil(t, errNotConnected, "expected an error")

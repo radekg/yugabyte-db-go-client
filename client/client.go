@@ -25,6 +25,10 @@ type YBClient interface {
 	// Execute executes the payload against the service
 	// and populates the response with the response data.
 	Execute(payload, response protoreflect.ProtoMessage) error
+	// Allows configuring the logger used by the client.
+	// Uses go-hclog. Users can provide integrate with any logging
+	// framework using https://pkg.go.dev/github.com/hashicorp/go-hclog#InterceptLogger.
+	WithLogger(logger hclog.Logger) YBClient
 }
 
 var (
@@ -46,12 +50,17 @@ type defaultYBClient struct {
 }
 
 // NewYBClient constructs a new instance of the high-level YugabyteDB client.
-func NewYBClient(config *configs.YBClientConfig, logger hclog.Logger) YBClient {
+func NewYBClient(config *configs.YBClientConfig) YBClient {
 	return &defaultYBClient{
 		config: config.WithDefaults(),
 		lock:   &sync.Mutex{},
-		logger: logger,
+		logger: hclog.Default(),
 	}
+}
+
+func (c *defaultYBClient) WithLogger(logger hclog.Logger) YBClient {
+	c.logger = logger
+	return c
 }
 
 func (c *defaultYBClient) Close() error {

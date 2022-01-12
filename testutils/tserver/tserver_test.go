@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/radekg/yugabyte-db-go-client/client"
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	"github.com/radekg/yugabyte-db-go-client/testutils/common"
@@ -30,7 +29,7 @@ func TestTServerIntegration(t *testing.T) {
 	client := client.NewYBClient(&configs.YBClientConfig{
 		MasterHostPort: masterTestCtx.MasterExternalAddresses(),
 		OpTimeout:      time.Duration(time.Second * 5),
-	}, hclog.Default())
+	})
 
 	common.Eventually(t, 15, func() error {
 		if err := client.Connect(); err != nil {
@@ -48,7 +47,7 @@ func TestTServerIntegration(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		t.Log(" ==> Received master list", response)
+		t.Log("Received master list", response)
 		return nil
 	})
 
