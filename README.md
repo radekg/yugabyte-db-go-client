@@ -38,7 +38,7 @@ func main() {
 
     if err := client.Connect(); err != nil {
         panic(err)
-	}
+    }
 
     request := &ybApi.ListMastersRequestPB{}
     response := &ybApi.ListMastersResponsePB{}
