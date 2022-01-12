@@ -1,6 +1,6 @@
 # YugabyteDB client for go
 
-Work in progress. Current state: this can definitely work.
+Work in progress. Current state: it does what it says it does.
 
 ## Go client
 
@@ -15,10 +15,10 @@ import (
     "time"
 
     "github.com/hashicorp/go-hclog"
-    
+
     "github.com/radekg/yugabyte-db-go-client/client"
-	"github.com/radekg/yugabyte-db-go-client/configs"
-	"github.com/radekg/yugabyte-db-go-client/errors"
+    "github.com/radekg/yugabyte-db-go-client/configs"
+    "github.com/radekg/yugabyte-db-go-client/errors"
 
     ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
 )
@@ -27,9 +27,9 @@ func main() {
 
     // construct the configuration:
     cfg := &configs.YBClientConfig{
-		MasterHostPort: []string{"127.0.0.1:7100", "127.0.0.1:17000", "127.0.0.1:27000"},
-		OpTimeout:      time.Duration(time.Second * 5),
-	}
+        MasterHostPort: []string{"127.0.0.1:7100", "127.0.0.1:17000", "127.0.0.1:27000"},
+        OpTimeout:      time.Duration(time.Second * 5),
+    }
 
     customLogger := hclog.Default()
 
@@ -37,21 +37,17 @@ func main() {
         WithLogger(customLogger.Named("custom-client-logger"))
 
     if err := client.Connect(); err != nil {
-		panic(err)
-	}
-
-    if err != nil {
         panic(err)
-    }
+	}
 
     request := &ybApi.ListMastersRequestPB{}
-	response := &ybApi.ListMastersResponsePB{}
-	err := client.Execute(request, response)
-	if err != nil {
+    response := &ybApi.ListMastersResponsePB{}
+    err := client.Execute(request, response)
+    if err != nil {
         client.Close()
         logger.Error("failed executing the request", "reason", err)
-		panic(err)
-	}
+        panic(err)
+    }
 
     // some of the payloads provide their own error responses,
     // handle it like this:
