@@ -2,7 +2,9 @@ package client
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net"
+	"time"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/radekg/yugabyte-db-go-client/configs"
@@ -64,6 +66,7 @@ func (dcc *defaultClientConnector) connect(cfg *configs.YBSingleNodeClientConfig
 		return nil, err
 	}
 	client := &defaultSingleNodeClient{
+		id:             fmt.Sprintf("client-%d", time.Now().Unix()),
 		originalConfig: cfg,
 		chanConnected:  make(chan struct{}, 1),
 		chanConnectErr: make(chan error, 1),

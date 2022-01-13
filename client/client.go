@@ -12,6 +12,7 @@ import (
 	"github.com/radekg/yugabyte-db-go-client/configs"
 	clientErrors "github.com/radekg/yugabyte-db-go-client/errors"
 	"github.com/radekg/yugabyte-db-go-client/metrics"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	ybApi "github.com/radekg/yugabyte-db-go-proto/v2/yb/api"
@@ -137,6 +138,11 @@ func (c *defaultYBClient) Execute(payload, response protoreflect.ProtoMessage) e
 			return nil
 		}
 
+		// Previous execute call could have resulted
+		// in an error response.
+		// Because we are reusing response object, we have to reset it!
+		proto.Reset(response)
+
 		if c.config.MaxExecuteRetries <= configs.NoExecuteRetry {
 			reportErr := executeErr
 			if tReconnectError, ok := executeErr.(*clientErrors.RequiresReconnectError); ok {
@@ -234,7 +240,6 @@ func (c *defaultYBClient) Execute(payload, response protoreflect.ProtoMessage) e
 			}
 
 			if !reconnected {
-
 				c.logger.Error("execute: failed reconnect consecutive maximum reconnect attempts",
 					"max-attempts", c.config.MaxReconnectAttempts,
 					"reason", tReconnectError.Cause)
@@ -242,7 +247,7 @@ func (c *defaultYBClient) Execute(payload, response protoreflect.ProtoMessage) e
 			}
 
 			// retry:
-			<-time.After(c.config.RetryInterval)
+			c.logger.Info("execute: client successfully reconnected")
 			currentAttempt = currentAttempt + 1
 			continue
 
@@ -358,6 +363,7 @@ func (c *defaultYBClient) connectUnsafe() error {
 				return &clientErrors.NoLeaderError{}
 			}
 		case connectedClient := <-chanConnectedClient:
+			c.logger.Debug("Setting connected client...")
 			c.metricsCallback.ClientConnect()
 			c.connectedClient = connectedClient
 			c.isConnecting = false

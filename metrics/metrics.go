@@ -28,7 +28,6 @@ func (p *noop) ClientBytesReceived(n int) {}
 func (p *noop) ClientBytesSent(n int)     {}
 func (p *noop) ClientConnect()            {}
 func (p *noop) ClientError()              {}
-func (p *noop) ClientPayloadSent()        {}
 func (p *noop) ClientMessageSendFailure() {}
 func (p *noop) ClientMessageSendSuccess() {}
 func (p *noop) ClientReconnectAttempt()   {}

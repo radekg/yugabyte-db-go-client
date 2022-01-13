@@ -19,6 +19,7 @@ var recvChunkSize = 4 * 1024
 
 // YBConnectedClient represents a connected client.
 type YBConnectedClient interface {
+	ClientID() string
 	// Close closes the connected client.
 	Close() error
 	// Execute executes the payload against the service
@@ -33,6 +34,7 @@ type YBConnectedClient interface {
 }
 
 type defaultSingleNodeClient struct {
+	id              string
 	originalConfig  *configs.YBSingleNodeClientConfig
 	callCounter     int
 	chanConnected   chan struct{}
@@ -42,6 +44,11 @@ type defaultSingleNodeClient struct {
 	logger          hclog.Logger
 	metricsCallback metrics.Callback
 	svcRegistry     ServiceRegistry
+}
+
+// Close closes a connected client.
+func (c *defaultSingleNodeClient) ClientID() string {
+	return c.id
 }
 
 // Close closes a connected client.
