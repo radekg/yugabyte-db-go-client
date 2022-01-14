@@ -220,9 +220,9 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 	responseHeader := &ybApi.ResponseHeader{}
 	protoErr := utils.DeserializeProto(responseHeaderBuf, responseHeader)
 	if protoErr != nil {
-		opLogger.Error("failed unmarshalling response header", "reason", err)
+		opLogger.Error("failed unmarshalling response header", "reason", protoErr)
 		return &errors.ReceiveError{
-			Cause: fmt.Errorf("response header unprocessable: %s", err.Error()),
+			Cause: fmt.Errorf("response header unprocessable: %s", protoErr.Error()),
 		}
 	}
 
@@ -271,12 +271,13 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 		for {
 			buf, err := c.recv()
 			if err != nil {
-				opLogger.Error("response payload read bytes count != expected count",
+				opLogger.Error("response payload read error",
 					"expected-payload-length", responsePayloadLength,
-					"read-payload-length", n)
+					"read-payload-length", n,
+					"reason", err)
 				return &errors.ReceiveError{
-					Cause: fmt.Errorf("response payload incomplete: read %d bytes vs expected %d",
-						n, responsePayloadLength),
+					Cause: fmt.Errorf("response payload read error: read %d bytes vs expected %d, reason: %s",
+						n, responsePayloadLength, err.Error()),
 				}
 			}
 
