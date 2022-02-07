@@ -120,4 +120,3 @@ func TryParseSnapshotIDFromString(input string) (SnapshotID, error) {
 	copy(output.bytes, bys)
 	return output, nil
 }
-diff --git a/utils/ybdbid/snapshot_id_test.go b/utils/ybdbid/snapshot_id_test.go
