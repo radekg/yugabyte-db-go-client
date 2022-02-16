@@ -38,6 +38,8 @@ const (
 	ErrorMessageReconnectRequired = "client: reconnect required"
 	// ErrorMessageSendFailed is an error message.
 	ErrorMessageSendFailed = "client: send failed"
+	// ErrorMessageServiceError is an error message.
+	ErrorMessageServiceError = "client: service error"
 	// ErrorMessageUnprocessableResponse is an error message.
 	ErrorMessageUnprocessableResponse = "client: unprocessable response"
 )
@@ -122,6 +124,25 @@ type RequiresReconnectError struct {
 
 func (e *RequiresReconnectError) Error() string {
 	return fmt.Sprintf("%s: no service for type '%s'", ErrorMessageReconnectRequired, e.Cause.Error())
+}
+
+// ServiceRPCError is returned when the client responds with
+// a response header with is_error true.
+type ServiceRPCError struct {
+	Cause *ybApi.ErrorStatusPB
+}
+
+func (e *ServiceRPCError) Error() string {
+	codeString := ybApi.ErrorStatusPB_RpcErrorCodePB_name[int32(ybApi.ErrorStatusPB_FATAL_UNKNOWN)]
+	if e.Cause.Code != nil {
+		if v, ok := ybApi.ErrorStatusPB_RpcErrorCodePB_name[int32(*e.Cause.Code)]; ok {
+			codeString = v
+		}
+	}
+	if e.Cause.Message == nil {
+		return fmt.Sprintf("%s: %s", ErrorMessageServiceError, codeString)
+	}
+	return fmt.Sprintf("%s: %s: %s", ErrorMessageServiceError, codeString, *e.Cause.Message)
 }
 
 // SendError is returned when the client is unable to

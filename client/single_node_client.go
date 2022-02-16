@@ -303,6 +303,20 @@ func (c *defaultSingleNodeClient) readResponseInto(reader *bytes.Buffer, m proto
 		}
 	}
 
+	if *responseHeader.IsError {
+		errorResponse := &ybApi.ErrorStatusPB{}
+		errorUnmarshalErr := utils.DeserializeProto(responsePayloadBuf, errorResponse)
+		if errorUnmarshalErr != nil {
+			return &errors.UnprocessableResponseError{
+				Cause:           errorUnmarshalErr,
+				ConsumedPayload: responseHeaderBuf,
+			}
+		}
+		return &errors.ServiceRPCError{
+			Cause: errorResponse,
+		}
+	}
+
 	protoErr2 := utils.DeserializeProto(responsePayloadBuf, m)
 	if protoErr2 != nil {
 		return &errors.UnprocessableResponseError{
