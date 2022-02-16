@@ -338,7 +338,7 @@ func (c *defaultYBClient) connectUnsafe() error {
 					return
 				}
 
-				if *masterRegistration.Role != ybApi.RaftPeerPB_LEADER {
+				if *masterRegistration.Role != ybApi.PeerRole_LEADER {
 					c.logger.Trace("master not leader",
 						"host-port", thisHostPort)
 					singleNodeClient.Close()
