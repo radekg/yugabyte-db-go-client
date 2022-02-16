@@ -10,7 +10,7 @@ const (
 	// DefaultYugabyteDBMasterImageName specifies the default Docker image name used in tests.
 	DefaultYugabyteDBMasterImageName = "yugabytedb/yugabyte"
 	// DefaultYugabyteDBImageVersion specifies the default Docker image version used in tests.
-	DefaultYugabyteDBImageVersion = "2.11.0.0-b7"
+	DefaultYugabyteDBImageVersion = "2.11.2.0-b89"
 	// DefaultYugabyteDBContainerUser specifies the default Docker container user.
 	DefaultYugabyteDBContainerUser = "yugabyte"
 	// DefaultReplicationFactor specifies the default replication factor.

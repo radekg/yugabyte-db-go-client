@@ -17,7 +17,7 @@ func TestServiceDescribe(t *testing.T) {
 		svcInfo := svcRegistry.Get(payload)
 		assert.NotNil(t, svcInfo)
 		assert.Equal(t, svcInfo.Method(), "ListMasters")
-		assert.Equal(t, svcInfo.Service(), "yb.master.MasterService")
+		assert.Equal(t, "yb.master.MasterService", svcInfo.Service())
 	})
 
 	t.Run("it=handles yb.server.GenericService payloads", func(tt *testing.T) {
