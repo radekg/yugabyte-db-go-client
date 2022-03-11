@@ -9,7 +9,7 @@ require (
 	github.com/lib/pq v1.9.0
 	// dockertest/v3 used in tests:
 	github.com/ory/dockertest/v3 v3.8.1
-	github.com/radekg/yugabyte-db-go-proto/v2 v2.11.2
+	github.com/radekg/yugabyte-db-go-proto/v2 v2.13.0
 	github.com/stretchr/testify v1.7.0
 	google.golang.org/protobuf v1.27.1
 )

@@ -72,3 +72,11 @@ func main() {
 
 }
 ```
+
+## Versions
+
+Notes on the client versions:
+
+- YugabyteDB `2.13.0`: use client version `v0.0.2-beta.2`
+- YugabyteDB `2.11.2`: use client version `v0.0.2-beta.1`
+- YugabyteDB `2.9.x`, `2.11.0`, `2.11.1`: use client version `v0.0.1-beta.4`
