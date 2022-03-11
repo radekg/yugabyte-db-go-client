@@ -3,7 +3,7 @@
 .PHONY: clean test git-tag
 
 CURRENT_DIR=$(dir $(realpath $(firstword $(MAKEFILE_LIST))))
-TAG_VERSION ?= $(shell cat $(CURRENT_DIR)/.version)
+TAG_VERSION ?= $(shell cat $(CURRENT_DIR)/.version | head -n1)
 
 TEST_TIMEOUT ?=120s
 
